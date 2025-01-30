@@ -16,130 +16,119 @@ const User = sequelize.define('User', {
     phone: { type: DataTypes.STRING }
 }, { tableName: 'users', timestamps: true });
 
-// 🎯 ตาราง computers - คอมพิวเตอร์ในร้าน
-const Computer = sequelize.define('Computer', {
+// 🎯 ตาราง snacks - เก็บเมนูขนมและเครื่องดื่ม
+const Snack = sequelize.define('Snack', {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     name: { type: DataTypes.STRING, allowNull: false },
-    status: { type: DataTypes.ENUM('available', 'in-use', 'maintenance'), defaultValue: 'available' }
-}, { tableName: 'computers', timestamps: true });
+    price: { type: DataTypes.FLOAT, allowNull: false },
+    category: { 
+        type: DataTypes.ENUM('potato', 'drink', 'milk', 'noodle', 'rice'), 
+        allowNull: false 
+    }
+}, { tableName: 'snacks', timestamps: false });
 
-// 🎯 ตาราง time_packages - แพ็กเกจเวลา
-const TimePackage = sequelize.define('TimePackage', {
-    id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-    duration: { type: DataTypes.INTEGER, allowNull: false }, // นาที
-    price: { type: DataTypes.FLOAT, allowNull: false }
-}, { tableName: 'time_packages', timestamps: false });
-
-// 🎯 ตาราง promotions - จัดโปรลดราคา
-const Promotion = sequelize.define('Promotion', {
+// 🎯 ตาราง snack_promotions - ระบบโปรโมชั่นสำหรับขนม
+const SnackPromotion = sequelize.define('SnackPromotion', {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     name: { type: DataTypes.STRING, allowNull: false },
-    discountPercent: { type: DataTypes.FLOAT, allowNull: true }, // เช่น ลด 10%
-    specialPrice: { type: DataTypes.FLOAT, allowNull: true } // ราคาพิเศษสำหรับแพ็กเกจ
-}, { tableName: 'promotions', timestamps: true });
+    discountPercent: { type: DataTypes.FLOAT, allowNull: true }, // ลด 10%
+    buyAmount: { type: DataTypes.INTEGER, allowNull: true }, // ซื้อครบกี่ชิ้น
+    freeAmount: { type: DataTypes.INTEGER, allowNull: true } // แถมกี่ชิ้น
+}, { tableName: 'snack_promotions', timestamps: true });
 
-// 🎯 ตาราง sessions - บันทึกการใช้งานคอม
-const Session = sequelize.define('Session', {
+// 🎯 ตาราง orders - เก็บข้อมูลคำสั่งซื้อขนมและเครื่องดื่ม
+const Order = sequelize.define('Order', {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-    startTime: { type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.NOW },
-    endTime: { type: DataTypes.DATE },
-    duration: { type: DataTypes.INTEGER }, // นาที
-    price: { type: DataTypes.FLOAT, allowNull: true } // ราคาหลังคำนวณส่วนลด
-}, { tableName: 'sessions', timestamps: true });
+    quantity: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
+    totalPrice: { type: DataTypes.FLOAT, allowNull: false }
+}, { tableName: 'orders', timestamps: true });
 
-// 🎯 ตาราง payments - บันทึกการชำระเงิน
-const Payment = sequelize.define('Payment', {
-    id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-    amount: { type: DataTypes.FLOAT, allowNull: false },
-    method: { type: DataTypes.ENUM('cash', 'credit', 'paypal'), allowNull: false },
-    status: { type: DataTypes.ENUM('pending', 'completed', 'failed'), defaultValue: 'pending' }
-}, { tableName: 'payments', timestamps: true });
+// 📌 กำหนดความสัมพันธ์ระหว่างตาราง
+User.hasMany(Order, { as: 'orders', foreignKey: 'userId' });
+Order.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 
-// 📌 ความสัมพันธ์ระหว่างตาราง
-User.hasMany(Session, { as: 'sessions', foreignKey: 'userId' });
-Session.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+Snack.hasMany(Order, { as: 'orders', foreignKey: 'snackId' });
+Order.belongsTo(Snack, { as: 'snack', foreignKey: 'snackId' });
 
-Computer.hasMany(Session, { as: 'sessions', foreignKey: 'computerId' });
-Session.belongsTo(Computer, { as: 'computer', foreignKey: 'computerId' });
-
-Session.belongsTo(TimePackage, { as: 'timePackage', foreignKey: 'packageId' });
-TimePackage.hasMany(Session, { as: 'sessions', foreignKey: 'packageId' });
-
-Session.belongsTo(Promotion, { as: 'promotion', foreignKey: 'promotionId' });
-Promotion.hasMany(Session, { as: 'sessions', foreignKey: 'promotionId' });
-
-Session.hasOne(Payment, { as: 'payment', foreignKey: 'sessionId' });
-Payment.belongsTo(Session, { as: 'session', foreignKey: 'sessionId' });
+Snack.hasMany(SnackPromotion, { as: 'promotions', foreignKey: 'snackId' });
+SnackPromotion.belongsTo(Snack, { as: 'snack', foreignKey: 'snackId' });
 
 // 🚀 ซิงค์ฐานข้อมูล
 sequelize.sync({ force: true })
-    .then(() => console.log("✅ Database synced with time packages and promotions!"))
+    .then(() => console.log("✅ Database synced with snack categories!"))
     .catch(err => console.error("❌ Sync error:", err));
 
-// 🕐 ฟังก์ชันเพิ่มแพ็กเกจเวลา
-async function addTimePackages() {
-    await TimePackage.bulkCreate([
-        { duration: 30, price: 15 },
-        { duration: 60, price: 25 },
-        { duration: 120, price: 45 },
-        { duration: 180, price: 60 },
-        { duration: 360, price: 100 },
-        { duration: 720, price: 180 }
+// 🛒 ฟังก์ชันเพิ่มเมนูขนมและเครื่องดื่ม (1-5 ตัวเลือกต่อประเภท)
+async function addSnacks() {
+    await Snack.bulkCreate([
+        { name: 'มันฝรั่งทอด เล็ก', price: 20, category: 'potato' },
+        { name: 'มันฝรั่งทอด กลาง', price: 30, category: 'potato' },
+        { name: 'มันฝรั่งทอด ใหญ่', price: 40, category: 'potato' },
+        { name: 'โค้ก', price: 20, category: 'drink' },
+        { name: 'น้ำเปล่า', price: 10, category: 'drink' },
+        { name: 'ชาเขียว', price: 25, category: 'drink' },
+        { name: 'นมจืด', price: 15, category: 'milk' },
+        { name: 'นมหวาน', price: 20, category: 'milk' },
+        { name: 'บะหมี่กึ่งรสต้มยำ', price: 30, category: 'noodle' },
+        { name: 'บะหมี่กึ่งรสหมูสับ', price: 25, category: 'noodle' },
+        { name: 'ข้าวไข่เจียว', price: 40, category: 'rice' },
+        { name: 'ข้าวกะเพราไก่', price: 50, category: 'rice' }
     ]);
-    console.log("✅ แพ็กเกจเวลาเพิ่มเรียบร้อย!");
+    console.log("✅ เพิ่มเมนูขนมและเครื่องดื่มเรียบร้อย!");
 }
 
-// 🎁 ฟังก์ชันเพิ่มโปรโมชั่น
-async function addPromotions() {
-    await Promotion.bulkCreate([
-        { name: "ส่วนลด 10%", discountPercent: 10 },
-        { name: "โปรพิเศษ 6 ชม. เหลือ 80 บาท", specialPrice: 80 }
+// 🎁 ฟังก์ชันเพิ่มโปรโมชั่นขนม
+async function addSnackPromotions() {
+    await SnackPromotion.bulkCreate([
+        { name: "ซื้อ 2 แถม 1", buyAmount: 2, freeAmount: 1 },
+        { name: "ลด 10% ทุกเครื่องดื่ม", discountPercent: 10 }
     ]);
-    console.log("✅ โปรโมชั่นเพิ่มเรียบร้อย!");
+    console.log("✅ โปรโมชั่นขนมเพิ่มเรียบร้อย!");
 }
 
-// 💰 ฟังก์ชันซื้อแพ็กเกจ
-async function buyTimePackage(userId, packageId, promotionId = null) {
-    const timePackage = await TimePackage.findByPk(packageId);
-    if (!timePackage) return console.log("❌ ไม่พบแพ็กเกจนี้");
+// 🥤 ฟังก์ชันสั่งขนมและเครื่องดื่ม
+async function createOrder(userId, snackId, quantity = 1) {
+    if (quantity < 1 || quantity > 5) {
+        return console.log("❌ กรุณาเลือกจำนวน 1-5 ชิ้น");
+    }
 
-    let finalPrice = timePackage.price;
-    if (promotionId) {
-        const promotion = await Promotion.findByPk(promotionId);
-        if (promotion) {
-            if (promotion.discountPercent) {
-                finalPrice *= (1 - promotion.discountPercent / 100);
-            } else if (promotion.specialPrice) {
-                finalPrice = promotion.specialPrice;
-            }
+    const snack = await Snack.findByPk(snackId);
+    if (!snack) return console.log("❌ ไม่พบเมนูนี้");
+
+    let totalQuantity = quantity;
+    let totalPrice = snack.price * quantity;
+
+    // ตรวจสอบโปรโมชั่นที่ใช้ได้
+    const promotions = await SnackPromotion.findAll({ where: { snackId } });
+    for (const promo of promotions) {
+        if (promo.discountPercent) {
+            totalPrice *= (1 - promo.discountPercent / 100);
+        }
+        if (promo.buyAmount && promo.freeAmount && quantity >= promo.buyAmount) {
+            totalQuantity += promo.freeAmount; // เพิ่มของแถม
         }
     }
 
-    const session = await Session.create({
-        userId, 
-        packageId, 
-        promotionId, 
-        duration: timePackage.duration, 
-        price: finalPrice, 
-        startTime: new Date(),
-        endTime: new Date(Date.now() + timePackage.duration * 60000)
-    });
+    await Order.create({ userId, snackId, quantity: totalQuantity, totalPrice });
 
-    console.log(`✅ ซื้อแพ็กเกจ ${timePackage.duration} นาที ราคา ${finalPrice.toFixed(2)} บาท`);
+    console.log(`✅ สั่ง ${snack.name} จำนวน ${quantity} ชิ้น (รวมแถม ${totalQuantity}) | รวม ${totalPrice.toFixed(2)} บาท`);
 }
 
 // 🚀 ตัวอย่างการใช้งาน
 async function runExample() {
-    await addTimePackages();
-    await addPromotions();
+    await addSnacks();
+    await addSnackPromotions();
 
     const user = await User.create({ name: "John Doe", email: "john@example.com", phone: "0812345678" });
 
-    // ซื้อแพ็กเกจ 2 ชม. พร้อมใช้โปรลด 10%
-    await buyTimePackage(user.id, 3, 1);
+    // สั่งมันฝรั่งทอด (เลือก 3 ชิ้น)
+    await createOrder(user.id, 1, 3);
 
-    // ซื้อแพ็กเกจ 6 ชม. พร้อมโปรพิเศษ 80 บาท
-    await buyTimePackage(user.id, 5, 2);
+    // สั่งโค้ก 2 ขวด (มีโปรลด 10%)
+    await createOrder(user.id, 4, 2);
+
+    // สั่งข้าวไข่เจียว 1 จาน
+    await createOrder(user.id, 11, 1);
 }
 
 runExample();
