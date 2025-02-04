@@ -4,7 +4,8 @@
   "description": "This Project is Web Application for Management Netcafe",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "tdb": "nodemon test-db.js"
   },
   "keywords": [],
   "author": "Napat",

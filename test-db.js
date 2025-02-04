@@ -1,15 +1,16 @@
+// testDatabase.js
 const { sequelize, User, Computer, Session, Payment, Order, OrderItem, Product, Coupon, Notification } = require('./CreateDB');
 
 const testDatabase = async () => {
   try {
     console.log('🚀 Starting CRUD tests...');
+    
+    // ตรวจสอบให้แน่ใจว่าตารางถูกซิงค์แล้ว
+    await sequelize.sync();
 
     // 📌 (1) CREATE - เพิ่มข้อมูลเข้าไปในตาราง
     console.log('📌 Creating test data...');
     
-    // 🔹 เช็คให้แน่ใจว่าตารางถูกสร้างแล้ว
-    await sequelize.sync();
-
     const user = await User.create({ 
       username: 'testuser', 
       password: 'password123', 
@@ -46,7 +47,6 @@ const testDatabase = async () => {
 
     // ✏️ (3) UPDATE - แก้ไขข้อมูล
     console.log('📌 Updating test data...');
-    await sequelize.sync(); // ซิงค์ข้อมูลก่อน
     const updatedUser = await User.findByPk(user.id);
     if (updatedUser) {
       await updatedUser.update({ phone_number: '0998765432' });
@@ -55,10 +55,10 @@ const testDatabase = async () => {
       console.error('❌ Error: User not found in database');
     }
 
-    // 🗑️ (4) DELETE - ลบข้อมูล (ลำดับถูกต้อง)
+    // 🗑️ (4) DELETE - ลบข้อมูล
     console.log('📌 Deleting test data...');
-
-    // ปิด foreign key constraint ชั่วคราว
+    
+    // ปิด foreign key constraints ชั่วคราว (สำหรับ SQLite)
     await sequelize.query('PRAGMA foreign_keys = OFF');
 
     await orderItem.destroy();
@@ -71,29 +71,23 @@ const testDatabase = async () => {
     await computer.destroy();
     await user.destroy();
 
-    // เปิด foreign key constraint กลับมา
+    // เปิด foreign key constraints กลับมา
     await sequelize.query('PRAGMA foreign_keys = ON');
 
     console.log('✅ Test data deleted successfully!');
-
     console.log('🎉 All CRUD operations completed successfully!');
-
+    
   } catch (error) {
     console.error('❌ Error testing database:', error);
   } finally {
-    // 🔹 ตรวจสอบว่า Sequelize ยังเปิดอยู่ก่อนปิด
-    if (sequelize.connectionManager && sequelize.connectionManager.pool) {
-      try {
-        if (!sequelize.connectionManager._closed) {
-          await sequelize.close();
-          console.log('🔌 Database connection closed.');
-        }
-      } catch (error) {
-        console.error('❌ Error closing database:', error);
-      }
+    try {
+      await sequelize.close();
+      console.log('🔌 Database connection closed.');
+    } catch (error) {
+      console.error('❌ Error closing database:', error);
     }
   }
 };
 
-// 🚀 เรียกใช้ฟังก์ชันทดสอบ
+// เรียกใช้ฟังก์ชันทดสอบ
 testDatabase();

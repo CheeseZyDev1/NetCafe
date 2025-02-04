@@ -1,3 +1,4 @@
+// CreateDB.js
 const { Sequelize, DataTypes } = require('sequelize');
 const path = require('path');
 
@@ -15,12 +16,12 @@ const User = sequelize.define('User', {
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
   phone_number: { type: DataTypes.STRING, allowNull: true },
   is_vip: { type: DataTypes.BOOLEAN, defaultValue: false },
-}, { timestamps: true });
+}, { timestamps: true, freezeTableName: true });
 
 // 🖥️ Computers (เครื่องคอมพิวเตอร์)
 const Computer = sequelize.define('Computer', {
   name: { type: DataTypes.STRING, allowNull: false, unique: true },
-  status: { type: DataTypes.STRING, defaultValue: 'Available' }, // ENUM -> STRING เพราะ SQLite ไม่รองรับ ENUM
+  status: { type: DataTypes.STRING, defaultValue: 'Available' },
   last_used: { type: DataTypes.DATE, allowNull: true },
 }, { timestamps: true });
 
@@ -34,13 +35,13 @@ const Session = sequelize.define('Session', {
 // 💰 Payments (การชำระเงิน)
 const Payment = sequelize.define('Payment', {
   amount: { type: DataTypes.FLOAT, allowNull: false },
-  payment_method: { type: DataTypes.STRING, allowNull: false }, // ENUM -> STRING
+  payment_method: { type: DataTypes.STRING, allowNull: false },
 }, { timestamps: true });
 
 // 🍔 Orders (พรีออเดอร์อาหาร)
 const Order = sequelize.define('Order', {
   total_price: { type: DataTypes.FLOAT, allowNull: false },
-  status: { type: DataTypes.STRING, defaultValue: 'Pending' }, // ENUM -> STRING
+  status: { type: DataTypes.STRING, defaultValue: 'Pending' },
 }, { timestamps: true });
 
 // 🥤 Order_Items (รายการอาหาร)
@@ -52,7 +53,7 @@ const OrderItem = sequelize.define('OrderItem', {
 const Product = sequelize.define('Product', {
   name: { type: DataTypes.STRING, allowNull: false },
   price: { type: DataTypes.FLOAT, allowNull: false },
-  category: { type: DataTypes.STRING, allowNull: false }, // ENUM -> STRING
+  category: { type: DataTypes.STRING, allowNull: false },
 }, { timestamps: true });
 
 // 🎟️ Coupons (คูปองส่วนลด)
@@ -77,31 +78,31 @@ const Notification = sequelize.define('Notification', {
 }, { timestamps: true });
 
 // 🌐 **Relationships (ความสัมพันธ์ของตาราง)**
-User.hasMany(Session, { foreignKey: 'user_id' });
-Session.belongsTo(User, { foreignKey: 'user_id' });
+User.hasMany(Session, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+Session.belongsTo(User, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 
-Computer.hasMany(Session, { foreignKey: 'computer_id' });
-Session.belongsTo(Computer, { foreignKey: 'computer_id' });
+Computer.hasMany(Session, { foreignKey: 'computer_id', onDelete: 'CASCADE' });
+Session.belongsTo(Computer, { foreignKey: 'computer_id', onDelete: 'CASCADE' });
 
-User.hasMany(Payment, { foreignKey: 'user_id' });
-Payment.belongsTo(User, { foreignKey: 'user_id' });
+User.hasMany(Payment, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+Payment.belongsTo(User, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 
-User.hasMany(Order, { foreignKey: 'user_id' });
-Order.belongsTo(User, { foreignKey: 'user_id' });
+User.hasMany(Order, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+Order.belongsTo(User, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 
-Order.hasMany(OrderItem, { foreignKey: 'order_id' });
-OrderItem.belongsTo(Order, { foreignKey: 'order_id' });
+Order.hasMany(OrderItem, { foreignKey: 'order_id', onDelete: 'CASCADE' });
+OrderItem.belongsTo(Order, { foreignKey: 'order_id', onDelete: 'CASCADE' });
 
-Product.hasMany(OrderItem, { foreignKey: 'product_id' });
-OrderItem.belongsTo(Product, { foreignKey: 'product_id' });
+Product.hasMany(OrderItem, { foreignKey: 'product_id', onDelete: 'CASCADE' });
+OrderItem.belongsTo(Product, { foreignKey: 'product_id', onDelete: 'CASCADE' });
 
-User.hasMany(Coupon, { foreignKey: 'user_id' });
-Coupon.belongsTo(User, { foreignKey: 'user_id' });
+User.hasMany(Coupon, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+Coupon.belongsTo(User, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 
-User.hasMany(Notification, { foreignKey: 'user_id' });
-Notification.belongsTo(User, { foreignKey: 'user_id' });
+User.hasMany(Notification, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+Notification.belongsTo(User, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 
-// 🚀 **ฟังก์ชันเชื่อมต่อฐานข้อมูล**
+// 🚀 **ฟังก์ชันเชื่อมต่อและซิงค์ฐานข้อมูล**
 const connectDB = async () => {
   try {
     await sequelize.authenticate();
@@ -111,22 +112,23 @@ const connectDB = async () => {
   }
 };
 
-// 🚀 **ฟังก์ชันสร้างฐานข้อมูล**
 const initDB = async () => {
   try {
     console.log("📌 Syncing database...");
-    await sequelize.sync({ force: true }); // บังคับให้สร้างใหม่หมด
+    await sequelize.sync({ alter: true }); // ใช้ alter: true เพื่อปรับโครงสร้างตารางให้ตรงกับโมเดล
     console.log('✅ Database & tables synchronized!');
   } catch (error) {
     console.error('❌ Error initializing database:', error);
   }
 };
 
-// 📌 เชื่อมต่อและสร้างฐานข้อมูล
-(async () => {
-  await connectDB();
-  await initDB();
-})();
+// ถ้าไฟล์นี้รันโดยตรง (ไม่ใช่การ import จากไฟล์อื่น) ให้เชื่อมต่อและซิงค์ฐานข้อมูล
+if (require.main === module) {
+  (async () => {
+    await connectDB();
+    await initDB();
+  })();
+}
 
 module.exports = {
   sequelize,
