@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "tdb": "nodemon test-db.js"
+    "testback": "nodemon backend.js"
   },
   "keywords": [],
   "author": "Napat",
