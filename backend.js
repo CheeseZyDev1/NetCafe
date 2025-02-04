@@ -1,4 +1,4 @@
-// app.js
+// backend.js
 const express = require('express');
 const {
   sequelize,
@@ -12,20 +12,33 @@ const {
   Coupon,
   Report,
   Notification,
+  Reservation,
 } = require('./CreateDB');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middlewares
+// Middleware สำหรับแปลงข้อมูล JSON
 app.use(express.json());
 
+// ----------------------------------------
+// Middleware สำหรับตรวจสอบสิทธิ์ของแอดมิน
+// ----------------------------------------
+const adminAuth = (req, res, next) => {
+  const token = req.headers['x-admin-auth'];
+  if (token && token === 'secret-admin-token') {
+    next();
+  } else {
+    res.status(403).json({ error: 'Forbidden: Admins only' });
+  }
+};
+
 // ================================
-// CRUD Endpoints สำหรับ Users
+// Endpoints สำหรับ Users
 // ================================
 
-// ดึงข้อมูล Users ทั้งหมด (พร้อมข้อมูลความสัมพันธ์)
-app.get('/users', async (req, res) => {
+// ดึงข้อมูล Users ทั้งหมด (เฉพาะแอดมิน)
+app.get('/users', adminAuth, async (req, res) => {
   try {
     const users = await User.findAll({
       include: [Session, Payment, Order, Notification],
@@ -36,8 +49,8 @@ app.get('/users', async (req, res) => {
   }
 });
 
-// ดึงข้อมูล User ตาม id
-app.get('/users/:id', async (req, res) => {
+// ดึงข้อมูล User ตาม id (เฉพาะแอดมิน)
+app.get('/users/:id', adminAuth, async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id, {
       include: [Session, Payment, Order, Notification],
@@ -49,7 +62,7 @@ app.get('/users/:id', async (req, res) => {
   }
 });
 
-// สร้าง User ใหม่
+// สร้าง User ใหม่ (เปิดให้ลูกค้าสมัครสมาชิก)
 app.post('/users', async (req, res) => {
   try {
     const newUser = await User.create(req.body);
@@ -59,8 +72,8 @@ app.post('/users', async (req, res) => {
   }
 });
 
-// แก้ไขข้อมูล User ตาม id
-app.put('/users/:id', async (req, res) => {
+// แก้ไขข้อมูล User ตาม id (เฉพาะแอดมิน)
+app.put('/users/:id', adminAuth, async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);
     if (user) {
@@ -72,8 +85,8 @@ app.put('/users/:id', async (req, res) => {
   }
 });
 
-// ลบ User ตาม id
-app.delete('/users/:id', async (req, res) => {
+// ลบ User ตาม id (เฉพาะแอดมิน)
+app.delete('/users/:id', adminAuth, async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);
     if (user) {
@@ -86,9 +99,10 @@ app.delete('/users/:id', async (req, res) => {
 });
 
 // ================================
-// CRUD Endpoints สำหรับ Computers
+// Endpoints สำหรับ Computers
 // ================================
 
+// ดึงข้อมูลเครื่องคอมพิวเตอร์ทั้งหมด (เปิดให้ลูกค้าเข้าดูได้)
 app.get('/computers', async (req, res) => {
   try {
     const computers = await Computer.findAll();
@@ -98,6 +112,7 @@ app.get('/computers', async (req, res) => {
   }
 });
 
+// ดึงข้อมูลเครื่องคอมพิวเตอร์ตาม id (เปิดให้ลูกค้าเข้าดูได้)
 app.get('/computers/:id', async (req, res) => {
   try {
     const computer = await Computer.findByPk(req.params.id);
@@ -108,7 +123,8 @@ app.get('/computers/:id', async (req, res) => {
   }
 });
 
-app.post('/computers', async (req, res) => {
+// สร้างเครื่องคอมพิวเตอร์ใหม่ (เฉพาะแอดมิน)
+app.post('/computers', adminAuth, async (req, res) => {
   try {
     const newComputer = await Computer.create(req.body);
     res.status(201).json(newComputer);
@@ -117,7 +133,8 @@ app.post('/computers', async (req, res) => {
   }
 });
 
-app.put('/computers/:id', async (req, res) => {
+// แก้ไขข้อมูลเครื่องคอมพิวเตอร์ (เฉพาะแอดมิน)
+app.put('/computers/:id', adminAuth, async (req, res) => {
   try {
     const computer = await Computer.findByPk(req.params.id);
     if (computer) {
@@ -129,7 +146,8 @@ app.put('/computers/:id', async (req, res) => {
   }
 });
 
-app.delete('/computers/:id', async (req, res) => {
+// ลบเครื่องคอมพิวเตอร์ (เฉพาะแอดมิน)
+app.delete('/computers/:id', adminAuth, async (req, res) => {
   try {
     const computer = await Computer.findByPk(req.params.id);
     if (computer) {
@@ -142,10 +160,11 @@ app.delete('/computers/:id', async (req, res) => {
 });
 
 // ================================
-// CRUD Endpoints สำหรับ Sessions
+// Endpoints สำหรับ Sessions
 // ================================
 
-app.get('/sessions', async (req, res) => {
+// ดึงข้อมูล Sessions ทั้งหมด (เฉพาะแอดมิน)
+app.get('/sessions', adminAuth, async (req, res) => {
   try {
     const sessions = await Session.findAll();
     res.json(sessions);
@@ -154,7 +173,8 @@ app.get('/sessions', async (req, res) => {
   }
 });
 
-app.get('/sessions/:id', async (req, res) => {
+// ดึงข้อมูล Session ตาม id (เฉพาะแอดมิน)
+app.get('/sessions/:id', adminAuth, async (req, res) => {
   try {
     const session = await Session.findByPk(req.params.id);
     if (session) res.json(session);
@@ -164,6 +184,7 @@ app.get('/sessions/:id', async (req, res) => {
   }
 });
 
+// สร้าง Session ใหม่ (เปิดให้ระบบ/ลูกค้าสร้างได้)
 app.post('/sessions', async (req, res) => {
   try {
     const newSession = await Session.create(req.body);
@@ -173,7 +194,8 @@ app.post('/sessions', async (req, res) => {
   }
 });
 
-app.put('/sessions/:id', async (req, res) => {
+// แก้ไข Session (เฉพาะแอดมิน)
+app.put('/sessions/:id', adminAuth, async (req, res) => {
   try {
     const session = await Session.findByPk(req.params.id);
     if (session) {
@@ -185,7 +207,8 @@ app.put('/sessions/:id', async (req, res) => {
   }
 });
 
-app.delete('/sessions/:id', async (req, res) => {
+// ลบ Session (เฉพาะแอดมิน)
+app.delete('/sessions/:id', adminAuth, async (req, res) => {
   try {
     const session = await Session.findByPk(req.params.id);
     if (session) {
@@ -198,10 +221,11 @@ app.delete('/sessions/:id', async (req, res) => {
 });
 
 // ================================
-// CRUD Endpoints สำหรับ Payments
+// Endpoints สำหรับ Payments
 // ================================
 
-app.get('/payments', async (req, res) => {
+// ดึงข้อมูล Payments ทั้งหมด (เฉพาะแอดมิน)
+app.get('/payments', adminAuth, async (req, res) => {
   try {
     const payments = await Payment.findAll();
     res.json(payments);
@@ -210,7 +234,8 @@ app.get('/payments', async (req, res) => {
   }
 });
 
-app.get('/payments/:id', async (req, res) => {
+// ดึงข้อมูล Payment ตาม id (เฉพาะแอดมิน)
+app.get('/payments/:id', adminAuth, async (req, res) => {
   try {
     const payment = await Payment.findByPk(req.params.id);
     if (payment) res.json(payment);
@@ -220,6 +245,7 @@ app.get('/payments/:id', async (req, res) => {
   }
 });
 
+// สร้าง Payment ใหม่ (เปิดให้ลูกค้าชำระเงิน)
 app.post('/payments', async (req, res) => {
   try {
     const newPayment = await Payment.create(req.body);
@@ -229,7 +255,8 @@ app.post('/payments', async (req, res) => {
   }
 });
 
-app.put('/payments/:id', async (req, res) => {
+// แก้ไข Payment (เฉพาะแอดมิน)
+app.put('/payments/:id', adminAuth, async (req, res) => {
   try {
     const payment = await Payment.findByPk(req.params.id);
     if (payment) {
@@ -241,7 +268,8 @@ app.put('/payments/:id', async (req, res) => {
   }
 });
 
-app.delete('/payments/:id', async (req, res) => {
+// ลบ Payment (เฉพาะแอดมิน)
+app.delete('/payments/:id', adminAuth, async (req, res) => {
   try {
     const payment = await Payment.findByPk(req.params.id);
     if (payment) {
@@ -254,10 +282,11 @@ app.delete('/payments/:id', async (req, res) => {
 });
 
 // ================================
-// CRUD Endpoints สำหรับ Orders
+// Endpoints สำหรับ Orders
 // ================================
 
-app.get('/orders', async (req, res) => {
+// ดึงข้อมูล Orders ทั้งหมด (เฉพาะแอดมิน)
+app.get('/orders', adminAuth, async (req, res) => {
   try {
     const orders = await Order.findAll({ include: [OrderItem] });
     res.json(orders);
@@ -266,7 +295,8 @@ app.get('/orders', async (req, res) => {
   }
 });
 
-app.get('/orders/:id', async (req, res) => {
+// ดึงข้อมูล Order ตาม id (เฉพาะแอดมิน)
+app.get('/orders/:id', adminAuth, async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id, { include: [OrderItem] });
     if (order) res.json(order);
@@ -276,6 +306,7 @@ app.get('/orders/:id', async (req, res) => {
   }
 });
 
+// สร้าง Order ใหม่ (เปิดให้ลูกค้าสั่งอาหาร)
 app.post('/orders', async (req, res) => {
   try {
     const newOrder = await Order.create(req.body);
@@ -285,7 +316,8 @@ app.post('/orders', async (req, res) => {
   }
 });
 
-app.put('/orders/:id', async (req, res) => {
+// แก้ไข Order (เฉพาะแอดมิน)
+app.put('/orders/:id', adminAuth, async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id);
     if (order) {
@@ -297,7 +329,8 @@ app.put('/orders/:id', async (req, res) => {
   }
 });
 
-app.delete('/orders/:id', async (req, res) => {
+// ลบ Order (เฉพาะแอดมิน)
+app.delete('/orders/:id', adminAuth, async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id);
     if (order) {
@@ -310,10 +343,11 @@ app.delete('/orders/:id', async (req, res) => {
 });
 
 // ================================
-// CRUD Endpoints สำหรับ OrderItems
+// Endpoints สำหรับ OrderItems
 // ================================
 
-app.get('/orderitems', async (req, res) => {
+// ดึงข้อมูล OrderItems ทั้งหมด (เฉพาะแอดมิน)
+app.get('/orderitems', adminAuth, async (req, res) => {
   try {
     const orderItems = await OrderItem.findAll();
     res.json(orderItems);
@@ -322,7 +356,8 @@ app.get('/orderitems', async (req, res) => {
   }
 });
 
-app.get('/orderitems/:id', async (req, res) => {
+// ดึงข้อมูล OrderItem ตาม id (เฉพาะแอดมิน)
+app.get('/orderitems/:id', adminAuth, async (req, res) => {
   try {
     const orderItem = await OrderItem.findByPk(req.params.id);
     if (orderItem) res.json(orderItem);
@@ -332,6 +367,7 @@ app.get('/orderitems/:id', async (req, res) => {
   }
 });
 
+// สร้าง OrderItem ใหม่ (เปิดให้ลูกค้าสร้าง Order พร้อมรายการสินค้า)
 app.post('/orderitems', async (req, res) => {
   try {
     const newOrderItem = await OrderItem.create(req.body);
@@ -341,7 +377,8 @@ app.post('/orderitems', async (req, res) => {
   }
 });
 
-app.put('/orderitems/:id', async (req, res) => {
+// แก้ไข OrderItem (เฉพาะแอดมิน)
+app.put('/orderitems/:id', adminAuth, async (req, res) => {
   try {
     const orderItem = await OrderItem.findByPk(req.params.id);
     if (orderItem) {
@@ -353,7 +390,8 @@ app.put('/orderitems/:id', async (req, res) => {
   }
 });
 
-app.delete('/orderitems/:id', async (req, res) => {
+// ลบ OrderItem (เฉพาะแอดมิน)
+app.delete('/orderitems/:id', adminAuth, async (req, res) => {
   try {
     const orderItem = await OrderItem.findByPk(req.params.id);
     if (orderItem) {
@@ -366,9 +404,10 @@ app.delete('/orderitems/:id', async (req, res) => {
 });
 
 // ================================
-// CRUD Endpoints สำหรับ Products
+// Endpoints สำหรับ Products (เมนูอาหาร)
 // ================================
 
+// ดึงข้อมูล Products ทั้งหมด (เปิดให้ลูกค้าเข้าดูเมนูอาหาร)
 app.get('/products', async (req, res) => {
   try {
     const products = await Product.findAll();
@@ -378,6 +417,7 @@ app.get('/products', async (req, res) => {
   }
 });
 
+// ดึงข้อมูล Product ตาม id (เปิดให้ลูกค้าเข้าดูเมนูอาหาร)
 app.get('/products/:id', async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
@@ -388,7 +428,8 @@ app.get('/products/:id', async (req, res) => {
   }
 });
 
-app.post('/products', async (req, res) => {
+// สร้าง Product ใหม่ (เฉพาะแอดมิน)
+app.post('/products', adminAuth, async (req, res) => {
   try {
     const newProduct = await Product.create(req.body);
     res.status(201).json(newProduct);
@@ -397,7 +438,8 @@ app.post('/products', async (req, res) => {
   }
 });
 
-app.put('/products/:id', async (req, res) => {
+// แก้ไข Product (เฉพาะแอดมิน)
+app.put('/products/:id', adminAuth, async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
     if (product) {
@@ -409,7 +451,8 @@ app.put('/products/:id', async (req, res) => {
   }
 });
 
-app.delete('/products/:id', async (req, res) => {
+// ลบ Product (เฉพาะแอดมิน)
+app.delete('/products/:id', adminAuth, async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
     if (product) {
@@ -422,10 +465,10 @@ app.delete('/products/:id', async (req, res) => {
 });
 
 // ================================
-// CRUD Endpoints สำหรับ Coupons
+// Endpoints สำหรับ Coupons
 // ================================
 
-app.get('/coupons', async (req, res) => {
+app.get('/coupons', adminAuth, async (req, res) => {
   try {
     const coupons = await Coupon.findAll();
     res.json(coupons);
@@ -434,7 +477,7 @@ app.get('/coupons', async (req, res) => {
   }
 });
 
-app.get('/coupons/:id', async (req, res) => {
+app.get('/coupons/:id', adminAuth, async (req, res) => {
   try {
     const coupon = await Coupon.findByPk(req.params.id);
     if (coupon) res.json(coupon);
@@ -444,7 +487,7 @@ app.get('/coupons/:id', async (req, res) => {
   }
 });
 
-app.post('/coupons', async (req, res) => {
+app.post('/coupons', adminAuth, async (req, res) => {
   try {
     const newCoupon = await Coupon.create(req.body);
     res.status(201).json(newCoupon);
@@ -453,7 +496,7 @@ app.post('/coupons', async (req, res) => {
   }
 });
 
-app.put('/coupons/:id', async (req, res) => {
+app.put('/coupons/:id', adminAuth, async (req, res) => {
   try {
     const coupon = await Coupon.findByPk(req.params.id);
     if (coupon) {
@@ -465,7 +508,7 @@ app.put('/coupons/:id', async (req, res) => {
   }
 });
 
-app.delete('/coupons/:id', async (req, res) => {
+app.delete('/coupons/:id', adminAuth, async (req, res) => {
   try {
     const coupon = await Coupon.findByPk(req.params.id);
     if (coupon) {
@@ -478,10 +521,10 @@ app.delete('/coupons/:id', async (req, res) => {
 });
 
 // ================================
-// CRUD Endpoints สำหรับ Reports
+// Endpoints สำหรับ Reports
 // ================================
 
-app.get('/reports', async (req, res) => {
+app.get('/reports', adminAuth, async (req, res) => {
   try {
     const reports = await Report.findAll();
     res.json(reports);
@@ -490,7 +533,7 @@ app.get('/reports', async (req, res) => {
   }
 });
 
-app.get('/reports/:id', async (req, res) => {
+app.get('/reports/:id', adminAuth, async (req, res) => {
   try {
     const report = await Report.findByPk(req.params.id);
     if (report) res.json(report);
@@ -500,7 +543,7 @@ app.get('/reports/:id', async (req, res) => {
   }
 });
 
-app.post('/reports', async (req, res) => {
+app.post('/reports', adminAuth, async (req, res) => {
   try {
     const newReport = await Report.create(req.body);
     res.status(201).json(newReport);
@@ -509,7 +552,7 @@ app.post('/reports', async (req, res) => {
   }
 });
 
-app.put('/reports/:id', async (req, res) => {
+app.put('/reports/:id', adminAuth, async (req, res) => {
   try {
     const report = await Report.findByPk(req.params.id);
     if (report) {
@@ -521,7 +564,7 @@ app.put('/reports/:id', async (req, res) => {
   }
 });
 
-app.delete('/reports/:id', async (req, res) => {
+app.delete('/reports/:id', adminAuth, async (req, res) => {
   try {
     const report = await Report.findByPk(req.params.id);
     if (report) {
@@ -534,10 +577,10 @@ app.delete('/reports/:id', async (req, res) => {
 });
 
 // ================================
-// CRUD Endpoints สำหรับ Notifications
+// Endpoints สำหรับ Notifications
 // ================================
 
-app.get('/notifications', async (req, res) => {
+app.get('/notifications', adminAuth, async (req, res) => {
   try {
     const notifications = await Notification.findAll();
     res.json(notifications);
@@ -546,7 +589,7 @@ app.get('/notifications', async (req, res) => {
   }
 });
 
-app.get('/notifications/:id', async (req, res) => {
+app.get('/notifications/:id', adminAuth, async (req, res) => {
   try {
     const notification = await Notification.findByPk(req.params.id);
     if (notification) res.json(notification);
@@ -556,7 +599,7 @@ app.get('/notifications/:id', async (req, res) => {
   }
 });
 
-app.post('/notifications', async (req, res) => {
+app.post('/notifications', adminAuth, async (req, res) => {
   try {
     const newNotification = await Notification.create(req.body);
     res.status(201).json(newNotification);
@@ -565,7 +608,7 @@ app.post('/notifications', async (req, res) => {
   }
 });
 
-app.put('/notifications/:id', async (req, res) => {
+app.put('/notifications/:id', adminAuth, async (req, res) => {
   try {
     const notification = await Notification.findByPk(req.params.id);
     if (notification) {
@@ -577,7 +620,7 @@ app.put('/notifications/:id', async (req, res) => {
   }
 });
 
-app.delete('/notifications/:id', async (req, res) => {
+app.delete('/notifications/:id', adminAuth, async (req, res) => {
   try {
     const notification = await Notification.findByPk(req.params.id);
     if (notification) {
@@ -590,11 +633,76 @@ app.delete('/notifications/:id', async (req, res) => {
 });
 
 // ================================
+// Endpoints สำหรับ Reservations
+// ================================
+
+// ลูกค้าสามารถจองเครื่องคอมพิวเตอร์ได้ (ไม่ต้องมี adminAuth)
+app.post('/reservations', async (req, res) => {
+  // คาดหวัง req.body มี { user_id, computer_id, reservation_time }
+  try {
+    const newReservation = await Reservation.create(req.body);
+    res.status(201).json(newReservation);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ดึงรายการ Reservations ทั้งหมด (เฉพาะแอดมิน)
+app.get('/reservations', adminAuth, async (req, res) => {
+  try {
+    const reservations = await Reservation.findAll({
+      include: [User, Computer],
+    });
+    res.json(reservations);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ดึงรายละเอียด Reservation ตาม id (เฉพาะแอดมิน)
+app.get('/reservations/:id', adminAuth, async (req, res) => {
+  try {
+    const reservation = await Reservation.findByPk(req.params.id, {
+      include: [User, Computer],
+    });
+    if (reservation) res.json(reservation);
+    else res.status(404).json({ error: 'Reservation not found' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// แก้ไข Reservation (เฉพาะแอดมิน)
+app.put('/reservations/:id', adminAuth, async (req, res) => {
+  try {
+    const reservation = await Reservation.findByPk(req.params.id);
+    if (reservation) {
+      await reservation.update(req.body);
+      res.json(reservation);
+    } else res.status(404).json({ error: 'Reservation not found' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ลบ Reservation (เฉพาะแอดมิน)
+app.delete('/reservations/:id', adminAuth, async (req, res) => {
+  try {
+    const reservation = await Reservation.findByPk(req.params.id);
+    if (reservation) {
+      await reservation.destroy();
+      res.json({ message: 'Reservation deleted successfully' });
+    } else res.status(404).json({ error: 'Reservation not found' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ================================
 // เริ่มต้นเซิร์ฟเวอร์
 // ================================
 app.listen(port, async () => {
   try {
-    // ทดสอบการเชื่อมต่อฐานข้อมูลก่อนเปิดเซิร์ฟเวอร์
     await sequelize.authenticate();
     console.log('✅ Connected to the database!');
     console.log(`🚀 Server is running on port ${port}`);

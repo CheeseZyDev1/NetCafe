@@ -16,6 +16,7 @@ const User = sequelize.define('User', {
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
   phone_number: { type: DataTypes.STRING, allowNull: true },
   is_vip: { type: DataTypes.BOOLEAN, defaultValue: false },
+  is_admin: { type: DataTypes.BOOLEAN, defaultValue: false }, // <-- เพิ่มฟิลด์ is_admin
 }, { timestamps: true, freezeTableName: true });
 
 // 🖥️ Computers (เครื่องคอมพิวเตอร์)
@@ -77,6 +78,13 @@ const Notification = sequelize.define('Notification', {
   is_read: { type: DataTypes.BOOLEAN, defaultValue: false },
 }, { timestamps: true });
 
+// 📅 Reservations (การจองเครื่องคอมพิวเตอร์)
+// ลูกค้าสามารถจองเครื่องคอมพิวเตอร์ในช่วงเวลาที่ต้องการได้
+const Reservation = sequelize.define('Reservation', {
+  reservation_time: { type: DataTypes.DATE, allowNull: false },
+  status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+}, { timestamps: true });
+
 // 🌐 **Relationships (ความสัมพันธ์ของตาราง)**
 User.hasMany(Session, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 Session.belongsTo(User, { foreignKey: 'user_id', onDelete: 'CASCADE' });
@@ -102,6 +110,13 @@ Coupon.belongsTo(User, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 User.hasMany(Notification, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 Notification.belongsTo(User, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 
+// **ความสัมพันธ์สำหรับ Reservation**
+User.hasMany(Reservation, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+Reservation.belongsTo(User, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+
+Computer.hasMany(Reservation, { foreignKey: 'computer_id', onDelete: 'CASCADE' });
+Reservation.belongsTo(Computer, { foreignKey: 'computer_id', onDelete: 'CASCADE' });
+
 // 🚀 **ฟังก์ชันเชื่อมต่อและซิงค์ฐานข้อมูล**
 const connectDB = async () => {
   try {
@@ -115,14 +130,13 @@ const connectDB = async () => {
 const initDB = async () => {
   try {
     console.log("📌 Syncing database...");
-    await sequelize.sync({ alter: true }); // ใช้ alter: true เพื่อปรับโครงสร้างตารางให้ตรงกับโมเดล
+    await sequelize.sync({ alter: true });
     console.log('✅ Database & tables synchronized!');
   } catch (error) {
     console.error('❌ Error initializing database:', error);
   }
 };
 
-// ถ้าไฟล์นี้รันโดยตรง (ไม่ใช่การ import จากไฟล์อื่น) ให้เชื่อมต่อและซิงค์ฐานข้อมูล
 if (require.main === module) {
   (async () => {
     await connectDB();
@@ -142,4 +156,5 @@ module.exports = {
   Coupon,
   Report,
   Notification,
+  Reservation, // <-- ส่งออก Reservation
 };

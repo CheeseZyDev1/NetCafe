@@ -1,0 +1,150 @@
+/* style.css */
+
+/* พื้นฐานของหน้า */
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  background-color: #141414;
+  color: #fff;
+}
+
+/* Auth Forms */
+#auth-container {
+  max-width: 400px;
+  margin: 80px auto;
+  padding: 20px;
+  background-color: #222;
+  border-radius: 8px;
+}
+.auth-form {
+  display: none;
+}
+.auth-form.active {
+  display: block;
+}
+.auth-form h2 {
+  text-align: center;
+}
+.auth-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.auth-form input {
+  padding: 10px;
+  font-size: 16px;
+  border: none;
+  border-radius: 4px;
+}
+.auth-form button {
+  padding: 10px;
+  font-size: 16px;
+  background-color: #e50914;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.auth-form p {
+  text-align: center;
+}
+
+/* Header สำหรับ Dashboard */
+header {
+  background-color: #141414;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+header .logo {
+  font-size: 24px;
+  font-weight: bold;
+}
+header button {
+  background-color: #e50914;
+  border: none;
+  padding: 8px 12px;
+  color: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+}
+header nav ul {
+  list-style: none;
+  display: flex;
+  gap: 15px;
+  margin: 0;
+  padding: 0;
+}
+header nav ul li a {
+  text-decoration: none;
+  color: #fff;
+  font-size: 16px;
+  padding: 5px 10px;
+}
+header nav ul li a:hover,
+header nav ul li a.active {
+  background-color: #e50914;
+  border-radius: 4px;
+}
+
+/* Sections */
+.section {
+  display: none;
+  padding: 20px;
+}
+.section.active {
+  display: block;
+}
+
+/* Hero Section */
+.hero {
+  height: 70vh;
+  background: url('https://via.placeholder.com/1500x800?text=NetCafe') no-repeat center center/cover;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.hero-content h1 {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+.hero-content p {
+  font-size: 24px;
+  margin-bottom: 30px;
+}
+
+/* Data Container & Cards */
+.data-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.data-card {
+  background-color: #222;
+  padding: 15px;
+  border-radius: 4px;
+  flex: 1 1 calc(33.333% - 20px);
+  box-sizing: border-box;
+  word-break: break-word;
+}
+.data-card pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* Responsive */
+@media screen and (max-width: 768px) {
+  .data-card {
+    flex: 1 1 calc(50% - 20px);
+  }
+}
+@media screen and (max-width: 480px) {
+  .data-card {
+    flex: 1 1 100%;
+  }
+}
