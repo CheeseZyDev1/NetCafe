@@ -1,5 +1,6 @@
 // backend.js
 const express = require('express');
+const cors = require('cors');
 const {
   sequelize,
   User,
@@ -18,12 +19,13 @@ const {
 const app = express();
 const port = process.env.PORT || 3000;
 
+// ใช้งาน CORS เพื่อให้ Frontend สามารถเรียก API ได้
+app.use(cors());
+
 // Middleware สำหรับแปลงข้อมูล JSON
 app.use(express.json());
 
-// ----------------------------------------
 // Middleware สำหรับตรวจสอบสิทธิ์ของแอดมิน
-// ----------------------------------------
 const adminAuth = (req, res, next) => {
   const token = req.headers['x-admin-auth'];
   if (token && token === 'secret-admin-token') {
@@ -33,11 +35,41 @@ const adminAuth = (req, res, next) => {
   }
 };
 
-// ================================
-// Endpoints สำหรับ Users
-// ================================
+/* ================================
+   Authentication Endpoints
+================================ */
 
-// ดึงข้อมูล Users ทั้งหมด (เฉพาะแอดมิน)
+// Endpoint สำหรับ Login
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    // ค้นหาผู้ใช้ที่มี username และ password ตรงกัน
+    const user = await User.findOne({ where: { username, password } });
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(401).json({ error: 'Invalid credentials' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint สำหรับ Register (สมัครสมาชิก)
+// (หมายเหตุ: Endpoint นี้ใช้สำหรับการสร้างผู้ใช้ใหม่ ไม่ต้องใช้ adminAuth)
+app.post('/users', async (req, res) => {
+  try {
+    const newUser = await User.create(req.body);
+    res.status(201).json(newUser);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/* ================================
+   Endpoints สำหรับ Users
+================================ */
+
 app.get('/users', adminAuth, async (req, res) => {
   try {
     const users = await User.findAll({
@@ -49,7 +81,6 @@ app.get('/users', adminAuth, async (req, res) => {
   }
 });
 
-// ดึงข้อมูล User ตาม id (เฉพาะแอดมิน)
 app.get('/users/:id', adminAuth, async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id, {
@@ -62,17 +93,6 @@ app.get('/users/:id', adminAuth, async (req, res) => {
   }
 });
 
-// สร้าง User ใหม่ (เปิดให้ลูกค้าสมัครสมาชิก)
-app.post('/users', async (req, res) => {
-  try {
-    const newUser = await User.create(req.body);
-    res.status(201).json(newUser);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// แก้ไขข้อมูล User ตาม id (เฉพาะแอดมิน)
 app.put('/users/:id', adminAuth, async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);
@@ -85,7 +105,6 @@ app.put('/users/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ลบ User ตาม id (เฉพาะแอดมิน)
 app.delete('/users/:id', adminAuth, async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);
@@ -98,11 +117,10 @@ app.delete('/users/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ================================
-// Endpoints สำหรับ Computers
-// ================================
+/* ================================
+   Endpoints สำหรับ Computers
+================================ */
 
-// ดึงข้อมูลเครื่องคอมพิวเตอร์ทั้งหมด (เปิดให้ลูกค้าเข้าดูได้)
 app.get('/computers', async (req, res) => {
   try {
     const computers = await Computer.findAll();
@@ -112,7 +130,6 @@ app.get('/computers', async (req, res) => {
   }
 });
 
-// ดึงข้อมูลเครื่องคอมพิวเตอร์ตาม id (เปิดให้ลูกค้าเข้าดูได้)
 app.get('/computers/:id', async (req, res) => {
   try {
     const computer = await Computer.findByPk(req.params.id);
@@ -123,7 +140,6 @@ app.get('/computers/:id', async (req, res) => {
   }
 });
 
-// สร้างเครื่องคอมพิวเตอร์ใหม่ (เฉพาะแอดมิน)
 app.post('/computers', adminAuth, async (req, res) => {
   try {
     const newComputer = await Computer.create(req.body);
@@ -133,7 +149,6 @@ app.post('/computers', adminAuth, async (req, res) => {
   }
 });
 
-// แก้ไขข้อมูลเครื่องคอมพิวเตอร์ (เฉพาะแอดมิน)
 app.put('/computers/:id', adminAuth, async (req, res) => {
   try {
     const computer = await Computer.findByPk(req.params.id);
@@ -146,7 +161,6 @@ app.put('/computers/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ลบเครื่องคอมพิวเตอร์ (เฉพาะแอดมิน)
 app.delete('/computers/:id', adminAuth, async (req, res) => {
   try {
     const computer = await Computer.findByPk(req.params.id);
@@ -159,11 +173,10 @@ app.delete('/computers/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ================================
-// Endpoints สำหรับ Sessions
-// ================================
+/* ================================
+   Endpoints สำหรับ Sessions
+================================ */
 
-// ดึงข้อมูล Sessions ทั้งหมด (เฉพาะแอดมิน)
 app.get('/sessions', adminAuth, async (req, res) => {
   try {
     const sessions = await Session.findAll();
@@ -173,7 +186,6 @@ app.get('/sessions', adminAuth, async (req, res) => {
   }
 });
 
-// ดึงข้อมูล Session ตาม id (เฉพาะแอดมิน)
 app.get('/sessions/:id', adminAuth, async (req, res) => {
   try {
     const session = await Session.findByPk(req.params.id);
@@ -184,7 +196,6 @@ app.get('/sessions/:id', adminAuth, async (req, res) => {
   }
 });
 
-// สร้าง Session ใหม่ (เปิดให้ระบบ/ลูกค้าสร้างได้)
 app.post('/sessions', async (req, res) => {
   try {
     const newSession = await Session.create(req.body);
@@ -194,7 +205,6 @@ app.post('/sessions', async (req, res) => {
   }
 });
 
-// แก้ไข Session (เฉพาะแอดมิน)
 app.put('/sessions/:id', adminAuth, async (req, res) => {
   try {
     const session = await Session.findByPk(req.params.id);
@@ -207,7 +217,6 @@ app.put('/sessions/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ลบ Session (เฉพาะแอดมิน)
 app.delete('/sessions/:id', adminAuth, async (req, res) => {
   try {
     const session = await Session.findByPk(req.params.id);
@@ -220,11 +229,10 @@ app.delete('/sessions/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ================================
-// Endpoints สำหรับ Payments
-// ================================
+/* ================================
+   Endpoints สำหรับ Payments
+================================ */
 
-// ดึงข้อมูล Payments ทั้งหมด (เฉพาะแอดมิน)
 app.get('/payments', adminAuth, async (req, res) => {
   try {
     const payments = await Payment.findAll();
@@ -234,7 +242,6 @@ app.get('/payments', adminAuth, async (req, res) => {
   }
 });
 
-// ดึงข้อมูล Payment ตาม id (เฉพาะแอดมิน)
 app.get('/payments/:id', adminAuth, async (req, res) => {
   try {
     const payment = await Payment.findByPk(req.params.id);
@@ -245,7 +252,6 @@ app.get('/payments/:id', adminAuth, async (req, res) => {
   }
 });
 
-// สร้าง Payment ใหม่ (เปิดให้ลูกค้าชำระเงิน)
 app.post('/payments', async (req, res) => {
   try {
     const newPayment = await Payment.create(req.body);
@@ -255,7 +261,6 @@ app.post('/payments', async (req, res) => {
   }
 });
 
-// แก้ไข Payment (เฉพาะแอดมิน)
 app.put('/payments/:id', adminAuth, async (req, res) => {
   try {
     const payment = await Payment.findByPk(req.params.id);
@@ -268,7 +273,6 @@ app.put('/payments/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ลบ Payment (เฉพาะแอดมิน)
 app.delete('/payments/:id', adminAuth, async (req, res) => {
   try {
     const payment = await Payment.findByPk(req.params.id);
@@ -281,11 +285,10 @@ app.delete('/payments/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ================================
-// Endpoints สำหรับ Orders
-// ================================
+/* ================================
+   Endpoints สำหรับ Orders
+================================ */
 
-// ดึงข้อมูล Orders ทั้งหมด (เฉพาะแอดมิน)
 app.get('/orders', adminAuth, async (req, res) => {
   try {
     const orders = await Order.findAll({ include: [OrderItem] });
@@ -295,7 +298,6 @@ app.get('/orders', adminAuth, async (req, res) => {
   }
 });
 
-// ดึงข้อมูล Order ตาม id (เฉพาะแอดมิน)
 app.get('/orders/:id', adminAuth, async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id, { include: [OrderItem] });
@@ -306,7 +308,6 @@ app.get('/orders/:id', adminAuth, async (req, res) => {
   }
 });
 
-// สร้าง Order ใหม่ (เปิดให้ลูกค้าสั่งอาหาร)
 app.post('/orders', async (req, res) => {
   try {
     const newOrder = await Order.create(req.body);
@@ -316,7 +317,6 @@ app.post('/orders', async (req, res) => {
   }
 });
 
-// แก้ไข Order (เฉพาะแอดมิน)
 app.put('/orders/:id', adminAuth, async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id);
@@ -329,7 +329,6 @@ app.put('/orders/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ลบ Order (เฉพาะแอดมิน)
 app.delete('/orders/:id', adminAuth, async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id);
@@ -342,11 +341,10 @@ app.delete('/orders/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ================================
-// Endpoints สำหรับ OrderItems
-// ================================
+/* ================================
+   Endpoints สำหรับ OrderItems
+================================ */
 
-// ดึงข้อมูล OrderItems ทั้งหมด (เฉพาะแอดมิน)
 app.get('/orderitems', adminAuth, async (req, res) => {
   try {
     const orderItems = await OrderItem.findAll();
@@ -356,7 +354,6 @@ app.get('/orderitems', adminAuth, async (req, res) => {
   }
 });
 
-// ดึงข้อมูล OrderItem ตาม id (เฉพาะแอดมิน)
 app.get('/orderitems/:id', adminAuth, async (req, res) => {
   try {
     const orderItem = await OrderItem.findByPk(req.params.id);
@@ -367,7 +364,6 @@ app.get('/orderitems/:id', adminAuth, async (req, res) => {
   }
 });
 
-// สร้าง OrderItem ใหม่ (เปิดให้ลูกค้าสร้าง Order พร้อมรายการสินค้า)
 app.post('/orderitems', async (req, res) => {
   try {
     const newOrderItem = await OrderItem.create(req.body);
@@ -377,7 +373,6 @@ app.post('/orderitems', async (req, res) => {
   }
 });
 
-// แก้ไข OrderItem (เฉพาะแอดมิน)
 app.put('/orderitems/:id', adminAuth, async (req, res) => {
   try {
     const orderItem = await OrderItem.findByPk(req.params.id);
@@ -390,7 +385,6 @@ app.put('/orderitems/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ลบ OrderItem (เฉพาะแอดมิน)
 app.delete('/orderitems/:id', adminAuth, async (req, res) => {
   try {
     const orderItem = await OrderItem.findByPk(req.params.id);
@@ -403,11 +397,10 @@ app.delete('/orderitems/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ================================
-// Endpoints สำหรับ Products (เมนูอาหาร)
-// ================================
+/* ================================
+   Endpoints สำหรับ Products (เมนูอาหาร)
+================================ */
 
-// ดึงข้อมูล Products ทั้งหมด (เปิดให้ลูกค้าเข้าดูเมนูอาหาร)
 app.get('/products', async (req, res) => {
   try {
     const products = await Product.findAll();
@@ -417,7 +410,6 @@ app.get('/products', async (req, res) => {
   }
 });
 
-// ดึงข้อมูล Product ตาม id (เปิดให้ลูกค้าเข้าดูเมนูอาหาร)
 app.get('/products/:id', async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
@@ -428,7 +420,6 @@ app.get('/products/:id', async (req, res) => {
   }
 });
 
-// สร้าง Product ใหม่ (เฉพาะแอดมิน)
 app.post('/products', adminAuth, async (req, res) => {
   try {
     const newProduct = await Product.create(req.body);
@@ -438,7 +429,6 @@ app.post('/products', adminAuth, async (req, res) => {
   }
 });
 
-// แก้ไข Product (เฉพาะแอดมิน)
 app.put('/products/:id', adminAuth, async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
@@ -451,7 +441,6 @@ app.put('/products/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ลบ Product (เฉพาะแอดมิน)
 app.delete('/products/:id', adminAuth, async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
@@ -464,9 +453,9 @@ app.delete('/products/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ================================
-// Endpoints สำหรับ Coupons
-// ================================
+/* ================================
+   Endpoints สำหรับ Coupons
+================================ */
 
 app.get('/coupons', adminAuth, async (req, res) => {
   try {
@@ -520,9 +509,9 @@ app.delete('/coupons/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ================================
-// Endpoints สำหรับ Reports
-// ================================
+/* ================================
+   Endpoints สำหรับ Reports
+================================ */
 
 app.get('/reports', adminAuth, async (req, res) => {
   try {
@@ -576,9 +565,9 @@ app.delete('/reports/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ================================
-// Endpoints สำหรับ Notifications
-// ================================
+/* ================================
+   Endpoints สำหรับ Notifications
+================================ */
 
 app.get('/notifications', adminAuth, async (req, res) => {
   try {
@@ -632,13 +621,11 @@ app.delete('/notifications/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ================================
-// Endpoints สำหรับ Reservations
-// ================================
+/* ================================
+   Endpoints สำหรับ Reservations
+================================ */
 
-// ลูกค้าสามารถจองเครื่องคอมพิวเตอร์ได้ (ไม่ต้องมี adminAuth)
 app.post('/reservations', async (req, res) => {
-  // คาดหวัง req.body มี { user_id, computer_id, reservation_time }
   try {
     const newReservation = await Reservation.create(req.body);
     res.status(201).json(newReservation);
@@ -647,7 +634,6 @@ app.post('/reservations', async (req, res) => {
   }
 });
 
-// ดึงรายการ Reservations ทั้งหมด (เฉพาะแอดมิน)
 app.get('/reservations', adminAuth, async (req, res) => {
   try {
     const reservations = await Reservation.findAll({
@@ -659,7 +645,6 @@ app.get('/reservations', adminAuth, async (req, res) => {
   }
 });
 
-// ดึงรายละเอียด Reservation ตาม id (เฉพาะแอดมิน)
 app.get('/reservations/:id', adminAuth, async (req, res) => {
   try {
     const reservation = await Reservation.findByPk(req.params.id, {
@@ -672,7 +657,6 @@ app.get('/reservations/:id', adminAuth, async (req, res) => {
   }
 });
 
-// แก้ไข Reservation (เฉพาะแอดมิน)
 app.put('/reservations/:id', adminAuth, async (req, res) => {
   try {
     const reservation = await Reservation.findByPk(req.params.id);
@@ -685,7 +669,6 @@ app.put('/reservations/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ลบ Reservation (เฉพาะแอดมิน)
 app.delete('/reservations/:id', adminAuth, async (req, res) => {
   try {
     const reservation = await Reservation.findByPk(req.params.id);
@@ -698,15 +681,44 @@ app.delete('/reservations/:id', adminAuth, async (req, res) => {
   }
 });
 
-// ================================
-// เริ่มต้นเซิร์ฟเวอร์
-// ================================
-app.listen(port, async () => {
+/* ================================
+   สร้าง Admin User (username: admin, password: 1234)
+================================ */
+
+// ฟังก์ชันสำหรับตรวจสอบและสร้าง admin user หากยังไม่มี
+async function createAdminUser() {
   try {
-    await sequelize.authenticate();
-    console.log('✅ Connected to the database!');
-    console.log(`🚀 Server is running on port ${port}`);
+    const admin = await User.findOne({ where: { username: 'admin' } });
+    if (!admin) {
+      await User.create({
+        username: 'admin',
+        password: '1234',
+        email: 'admin@example.com',
+        phone_number: '',
+        is_vip: false,
+        is_admin: true
+      });
+      console.log('Admin user created.');
+    } else {
+      console.log('Admin user already exists.');
+    }
   } catch (error) {
-    console.error('❌ Unable to connect to the database:', error);
+    console.error('Error creating admin user:', error);
   }
-});
+}
+
+/* ================================
+   เริ่มต้นเซิร์ฟเวอร์หลังจากซิงค์ฐานข้อมูล
+================================ */
+
+sequelize.sync({ alter: true })
+  .then(() => {
+    console.log('Database & tables synchronized!');
+    createAdminUser();
+    app.listen(port, () => {
+      console.log(`🚀 Server is running on port ${port}`);
+    });
+  })
+  .catch(err => {
+    console.error('Error syncing database:', err);
+  });
