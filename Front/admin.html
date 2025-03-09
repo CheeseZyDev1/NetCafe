@@ -4,21 +4,54 @@
   <meta charset="UTF-8">
   <title>Admin Dashboard</title>
   <style>
+    /* Global Styles */
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
       padding: 0;
-      background: #f5f5f5;
+      background: #f0f2f5;
+      color: #333;
     }
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+    button {
+      cursor: pointer;
+    }
+
+    /* Header */
     .header {
-      background: #007bff;
+      background: linear-gradient(135deg, #007bff, #00a1ff);
       color: #fff;
-      padding: 15px;
+      padding: 15px 20px;
       text-align: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .logout-btn {
+      position: fixed;
+      top: 15px;
+      right: 20px;
+      background: #dc3545;
+      border: none;
+      padding: 8px 16px;
+      color: #fff;
+      border-radius: 4px;
+    }
+
+    /* Sidebar */
     .sidebar {
-      width: 220px;
-      background: #333;
+      width: 240px;
+      background: #343a40;
       color: #fff;
       position: fixed;
       top: 60px;
@@ -29,82 +62,108 @@
     }
     .sidebar h3 {
       margin-top: 0;
+      font-size: 20px;
+      margin-bottom: 15px;
+      text-align: center;
     }
     .sidebar a {
-      color: #fff;
-      text-decoration: none;
       display: block;
-      margin: 10px 0;
-      padding: 5px;
+      padding: 10px 15px;
+      margin: 5px 0;
+      background: #495057;
+      border-radius: 4px;
+      transition: background 0.3s ease;
     }
     .sidebar a:hover {
-      background: #444;
+      background: #6c757d;
     }
+
+    /* Content Area */
     .content {
-      margin-left: 240px;
-      padding: 20px;
+      margin-left: 260px;
+      padding: 80px 20px 20px 20px;
     }
+    .content h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 22px;
+      text-align: center;
+    }
+    /* Table Styles */
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
-    }
-    table, th, td {
-      border: 1px solid #ccc;
+      margin-bottom: 20px;
+      background: #fff;
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     th, td {
-      padding: 8px;
+      padding: 12px 15px;
       text-align: center;
+      border-bottom: 1px solid #eee;
     }
+    th {
+      background: #007bff;
+      color: #fff;
+    }
+    tr:hover {
+      background: #f1f1f1;
+    }
+    /* Buttons */
     .btn {
-      padding: 5px 10px;
+      padding: 8px 12px;
       margin: 2px;
-      cursor: pointer;
       border: none;
-      border-radius: 3px;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: background 0.3s ease;
     }
     .btn.edit {
       background: #28a745;
       color: #fff;
     }
+    .btn.edit:hover {
+      background: #218838;
+    }
     .btn.delete {
       background: #dc3545;
       color: #fff;
     }
+    .btn.delete:hover {
+      background: #c82333;
+    }
     .btn.add {
       background: #007bff;
       color: #fff;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
     }
+    /* Form Container */
     .form-container {
-      margin-top: 20px;
       background: #fff;
       padding: 20px;
-      border: 1px solid #ccc;
+      border: 1px solid #ddd;
       border-radius: 4px;
-    }
-    .form-container input, .form-container select {
-      padding: 5px;
-      margin: 5px 0;
-      width: 100%;
-      box-sizing: border-box;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      margin-top: 20px;
     }
     .form-container label {
+      display: block;
+      margin-bottom: 5px;
       font-weight: bold;
+    }
+    .form-container input,
+    .form-container select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
     }
     .hidden {
       display: none;
-    }
-    .logout-btn {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #dc3545;
-      color: #fff;
-      padding: 10px 16px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
     }
   </style>
 </head>
@@ -113,6 +172,7 @@
     <h1>Admin Dashboard</h1>
   </div>
   <button class="logout-btn" onclick="logout()">Logout</button>
+  
   <div class="sidebar">
     <h3>Manage</h3>
     <a href="#" onclick="loadSection('users')">Users</a>
@@ -127,15 +187,18 @@
     <a href="#" onclick="loadSection('notifications')">Notifications</a>
     <a href="#" onclick="loadSection('reservations')">Reservations</a>
   </div>
+  
   <div class="content">
     <h2 id="section-title">Welcome to Admin Dashboard</h2>
     <div id="section-content">
-      <p>Select a section from the sidebar to manage data.</p>
+      <p> Select a section from the sidebar to manage data.</p>
     </div>
   </div>
   
   <script>
     const baseURL = 'http://localhost:8000';
+    
+    // ตรวจสอบ admin จาก localStorage
     const adminData = JSON.parse(localStorage.getItem('admin'));
     if (!adminData) {
       window.location.href = 'login.html';
@@ -196,6 +259,7 @@
     
     function showForm(model, action, record = {}) {
       let formHtml = `<h3>${action === 'add' ? 'Add New' : 'Edit'} ${model.charAt(0).toUpperCase() + model.slice(1)}</h3>`;
+      // สำหรับตัวอย่างนี้ เราจะใช้ keys ของ record ถ้าแก้ไข, หรือ field สมมุติสำหรับเพิ่มใหม่
       const fields = action === 'edit' ? Object.keys(record) : ["field1", "field2"];
       fields.forEach(field => {
         if (action === 'add' && field === 'id') return;
