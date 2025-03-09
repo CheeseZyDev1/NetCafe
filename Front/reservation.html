@@ -5,10 +5,12 @@
   <title>Computer Reservation</title>
   <style>
     body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
-    .container { max-width: 900px; margin: 20px auto; background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .container { max-width: 900px; margin: 20px auto; background: #fff; border-radius: 8px; padding: 20px; 
+                 box-shadow: 0 0 10px rgba(0,0,0,0.1); }
     h2 { text-align: center; }
     .nav { text-align: center; margin-bottom: 20px; }
-    .nav a { margin: 0 5px; padding: 8px 16px; background: #007bff; color: #fff; text-decoration: none; border-radius: 4px; }
+    .nav a { margin: 0 5px; padding: 8px 16px; background: #007bff; color: #fff; text-decoration: none; 
+             border-radius: 4px; }
     .nav a:hover { background: #0056b3; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { padding: 10px; border: 1px solid #ccc; text-align: center; }
@@ -26,15 +28,28 @@
       transition: opacity 0.5s ease-in-out;
     }
     .toast.show { opacity: 1; }
+    /* Fixed Home button */
+    .top-left-button {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: #007bff;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 4px;
+      text-decoration: none;
+    }
   </style>
 </head>
 <body>
+  <!-- Fixed Home button -->
+  <a href="home.html" class="top-left-button">🏠 Home</a>
   <div class="container">
     <h2>Computer Reservation</h2>
     <div class="nav">
-      <a href="home.html">🏠 Home</a>
-      <a href="cart.html">🛒 Cart</a>
-      <a href="sessions.html">⌛ Sessions</a>
+      <a href="reservation.html">Reservation</a>
+      <a href="cart.html">Cart</a>
+      <a href="sessions.html">Sessions</a>
     </div>
     <div id="computer-list"></div>
     <div id="reservation-message" class="toast"></div>
@@ -45,7 +60,6 @@
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) { window.location.href = 'login.html'; }
 
-    // Fetch computers from backend
     async function fetchComputers() {
       try {
         const res = await fetch(`${baseURL}/computers`);
@@ -70,9 +84,7 @@
         </thead>
         <tbody>`;
       computers.forEach((comp, index) => {
-         // ใช้ชื่อที่ส่งมาหรือกำหนดเป็น "Computer {index+1}"
          const compName = comp.name || `Computer ${index+1}`;
-         // ถ้า status เป็น "Available" ให้ถือว่าเป็น "Empty"
          const statusText = (comp.status === "Available") ? "Empty" : comp.status;
          const disabled = (statusText === "Empty") ? "" : "disabled";
          html += `<tr id="comp-${comp.id}">
@@ -95,7 +107,7 @@
     function updatePrice(compId, pricePerHour) {
       const hours = parseInt(document.getElementById(`hours-${compId}`).value) || 1;
       const discount = (hours > 1) ? Math.min((hours - 1) * 5, 45) : 0;
-      const total = pricePerHour * hours * (1 - discount/100);
+      const total = pricePerHour * hours * (1 - discount / 100);
       document.getElementById(`price-${compId}`).textContent = total.toFixed(2);
     }
 
@@ -103,18 +115,17 @@
       const toast = document.getElementById('reservation-message');
       toast.textContent = message;
       toast.classList.add('show');
-      setTimeout(() => { toast.classList.remove('show'); }, 3000);
+      setTimeout(() => { toast.classList.remove('show'); }, 5000); // 5 seconds
     }
 
     async function reserveComputer(compId, compName, pricePerHour) {
       const hours = parseInt(document.getElementById(`hours-${compId}`).value) || 1;
       const discount = (hours > 1) ? Math.min((hours - 1) * 5, 45) : 0;
-      const total = pricePerHour * hours * (1 - discount/100);
+      const total = pricePerHour * hours * (1 - discount / 100);
       const now = new Date();
       const start_time = now.toISOString();
       const end_time = new Date(now.getTime() + hours * 60 * 60 * 1000).toISOString();
-      // กำหนด deadline 5 นาทีจากนี้ (300,000 ms)
-      const deadline = now.getTime() + 300000;
+      const deadline = now.getTime() + 300000; // 5 minutes in ms
       const reservationData = {
          UserId: user.id,
          ComputerId: compId,
@@ -125,7 +136,8 @@
          reservation_time: now.toISOString(),
          start_time,
          end_time,
-         deadline
+         deadline,
+         price_per_hour: pricePerHour
       };
 
       try {
@@ -136,13 +148,10 @@
          });
          const data = await res.json();
          if (res.ok) {
-            // อัปเดทสถานะใน UI เป็น Pending และ disable ปุ่ม Reserve
             document.getElementById(`status-${compId}`).textContent = "Pending";
             document.querySelector(`#comp-${compId} button`).disabled = true;
-            // บันทึก reservation ใน Cart พร้อม deadline
-            addToCart({ type: 'reservation', data: { ...data, deadline } });
+            addToCart({ type: 'reservation', data: { ...data, deadline, price_per_hour: pricePerHour } });
             showToast(`Reserved ${compName}. Time left: 5:00`);
-            // ตั้ง timer ยกเลิก reservation ถ้ายังไม่ชำระ
             setTimeout(() => { cancelReservation(data.id, compId); }, 300000);
          } else {
             showToast(data.error || 'Reservation failed!');
@@ -167,7 +176,6 @@
                showToast(`Reservation canceled due to timeout.`);
                cart.splice(index, 1);
                localStorage.setItem('cart', JSON.stringify(cart));
-               // Re-enable Reserve button
                document.querySelector(`#comp-${compId} button`).disabled = false;
             }
          } catch (error) {

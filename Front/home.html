@@ -14,7 +14,13 @@
       margin-bottom: 20px;
       border-radius: 4px;
     }
-    #welcome { font-size: 32px; font-weight: bold; margin-bottom: 20px; }
+    #welcome { font-size: 32px; font-weight: bold; margin-bottom: 20px; overflow: hidden; }
+    .scrolling-text { display: inline-block; white-space: nowrap; animation: scroll 10s linear infinite; }
+    @keyframes scroll {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    .rainbow { animation: rainbow 3s infinite; }
     @keyframes rainbow {
       0% { color: red; }
       16% { color: orange; }
@@ -24,25 +30,36 @@
       83% { color: indigo; }
       100% { color: violet; }
     }
-    .rainbow { animation: rainbow 3s infinite; }
     .nav {
       display: flex;
       justify-content: space-around;
       flex-wrap: wrap;
       margin-bottom: 20px;
     }
-    .nav-item {
-      text-align: center;
-      margin: 10px;
-    }
+    .nav-item { text-align: center; margin: 10px; }
     .nav-item a { text-decoration: none; font-size: 48px; }
     .nav-item p { margin: 5px 0 0; font-size: 16px; }
+    /* Fixed navigation buttons */
+    .top-left-button {
+      position: fixed; top: 20px; left: 20px; background: #007bff; color: #fff; padding: 10px 16px; border-radius: 4px; text-decoration: none;
+    }
+    .bottom-right-button {
+      position: fixed; bottom: 20px; right: 20px; background: #555; color: #fff; padding: 10px 16px; border-radius: 4px; border: none; cursor: pointer;
+    }
+    .logout-button {
+      position: fixed; top: 20px; right: 20px; background: #dc3545; color: #fff; padding: 10px 16px; border-radius: 4px; border: none; cursor: pointer;
+    }
   </style>
 </head>
 <body>
+  <!-- Top right Logout button -->
+  <button class="logout-button" onclick="logout()">Logout</button>
+  
   <div class="container">
-    <div id="notification-bar">✨โปรโมชั่น✨: ยิ่งจองชั่วโมงเยอะ ยิ่งลดมาก สูงสุด 45%❗❗</div>
-    <div id="welcome" class="rainbow"><span id="username"></span></div>
+    <div id="notification-bar">โปรโมชั่น: ยิ่งจองชั่วโมงเยอะ ยิ่งลดสูงสุด 45%!!</div>
+    <div id="welcome" class="rainbow">
+      <span class="scrolling-text">Welcome, <span id="username"></span>!</span>
+    </div>
     <div class="nav">
       <div class="nav-item">
         <a href="reservation.html">🖥</a>
@@ -64,13 +81,27 @@
         <a href="profile.html">👤</a>
         <p>Profile</p>
       </div>
+      <div class="nav-item">
+        <a href="order_history.html">📜</a>
+        <p>Order History</p>
+      </div>
     </div>
   </div>
-
+  
+  <!-- Bottom right Back button -->
+  
+  
   <script>
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) { window.location.href = 'login.html'; }
-    document.getElementById('username').textContent = "Welcome, " + user.username;
+    document.getElementById('username').textContent = user.username;
+    function logout() {
+      localStorage.removeItem('user');
+      window.location.href = 'login.html';
+    }
+    function goBack() {
+      window.history.back();
+    }
   </script>
 </body>
 </html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+    }
+    .header {
+      background: #007bff;
+      color: #fff;
+      padding: 15px;
+      text-align: center;
+    }
+    .sidebar {
+      width: 220px;
+      background: #333;
+      color: #fff;
+      position: fixed;
+      top: 60px;
+      bottom: 0;
+      left: 0;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .sidebar h3 {
+      margin-top: 0;
+    }
+    .sidebar a {
+      color: #fff;
+      text-decoration: none;
+      display: block;
+      margin: 10px 0;
+      padding: 5px;
+    }
+    .sidebar a:hover {
+      background: #444;
+    }
+    .content {
+      margin-left: 240px;
+      padding: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      padding: 8px;
+      text-align: center;
+    }
+    .btn {
+      padding: 5px 10px;
+      margin: 2px;
+      cursor: pointer;
+      border: none;
+      border-radius: 3px;
+    }
+    .btn.edit {
+      background: #28a745;
+      color: #fff;
+    }
+    .btn.delete {
+      background: #dc3545;
+      color: #fff;
+    }
+    .btn.add {
+      background: #007bff;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+    .form-container {
+      margin-top: 20px;
+      background: #fff;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .form-container input, .form-container select {
+      padding: 5px;
+      margin: 5px 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .form-container label {
+      font-weight: bold;
+    }
+    .hidden {
+      display: none;
+    }
+    .logout-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #dc3545;
+      color: #fff;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Admin Dashboard</h1>
+  </div>
+  <button class="logout-btn" onclick="logout()">Logout</button>
+  <div class="sidebar">
+    <h3>Manage</h3>
+    <a href="#" onclick="loadSection('users')">Users</a>
+    <a href="#" onclick="loadSection('computers')">Computers</a>
+    <a href="#" onclick="loadSection('sessions')">Sessions</a>
+    <a href="#" onclick="loadSection('payments')">Payments</a>
+    <a href="#" onclick="loadSection('orders')">Orders</a>
+    <a href="#" onclick="loadSection('orderitems')">Order Items</a>
+    <a href="#" onclick="loadSection('products')">Products</a>
+    <a href="#" onclick="loadSection('coupons')">Coupons</a>
+    <a href="#" onclick="loadSection('reports')">Reports</a>
+    <a href="#" onclick="loadSection('notifications')">Notifications</a>
+    <a href="#" onclick="loadSection('reservations')">Reservations</a>
+  </div>
+  <div class="content">
+    <h2 id="section-title">Welcome to Admin Dashboard</h2>
+    <div id="section-content">
+      <p>Select a section from the sidebar to manage data.</p>
+    </div>
+  </div>
+  
+  <script>
+    const baseURL = 'http://localhost:8000';
+    const adminData = JSON.parse(localStorage.getItem('admin'));
+    if (!adminData) {
+      window.location.href = 'login.html';
+    }
+    
+    function logout() {
+      localStorage.removeItem('admin');
+      window.location.href = 'login.html';
+    }
+    
+    function loadSection(model) {
+      document.getElementById('section-title').textContent = model.charAt(0).toUpperCase() + model.slice(1);
+      fetchData(model);
+    }
+    
+    function fetchData(model) {
+      fetch(`${baseURL}/${model}`, {
+        headers: {
+          'x-admin-password': 'secret-admin-password'
+        }
+      })
+        .then(response => response.json())
+        .then(data => {
+          renderTable(model, data);
+        })
+        .catch(err => {
+          document.getElementById('section-content').innerHTML = `<p>Error loading data: ${err}</p>`;
+        });
+    }
+    
+    function renderTable(model, data) {
+      let html = `<button class="btn add" onclick="showForm('${model}', 'add')">Add New</button>`;
+      html += `<table><thead><tr>`;
+      if (data.length > 0) {
+        Object.keys(data[0]).forEach(key => {
+          html += `<th>${key}</th>`;
+        });
+        html += `<th>Actions</th>`;
+        html += `</tr></thead><tbody>`;
+        data.forEach(item => {
+          html += `<tr>`;
+          Object.keys(item).forEach(key => {
+            html += `<td>${item[key]}</td>`;
+          });
+          html += `<td>
+            <button class="btn edit" onclick='showForm("${model}", "edit", ${JSON.stringify(item)})'>Edit</button>
+            <button class="btn delete" onclick='deleteRecord("${model}", ${item.id})'>Delete</button>
+          </td>`;
+          html += `</tr>`;
+        });
+        html += `</tbody></table>`;
+      } else {
+        html += `</tr></thead><tbody><tr><td colspan="100%">No records found.</td></tr></tbody></table>`;
+      }
+      html += `<div id="form-container" class="form-container hidden"></div>`;
+      document.getElementById('section-content').innerHTML = html;
+    }
+    
+    function showForm(model, action, record = {}) {
+      let formHtml = `<h3>${action === 'add' ? 'Add New' : 'Edit'} ${model.charAt(0).toUpperCase() + model.slice(1)}</h3>`;
+      const fields = action === 'edit' ? Object.keys(record) : ["field1", "field2"];
+      fields.forEach(field => {
+        if (action === 'add' && field === 'id') return;
+        const value = record[field] || '';
+        formHtml += `<label>${field}:</label>
+                     <input type="text" id="form-${field}" value="${value}"><br>`;
+      });
+      formHtml += `<button onclick="submitForm('${model}', '${action}', ${action === 'edit' ? record.id : 'null'})">${action === 'add' ? 'Add' : 'Update'}</button>`;
+      formHtml += `<button onclick="hideForm()">Cancel</button>`;
+      document.getElementById('form-container').innerHTML = formHtml;
+      document.getElementById('form-container').classList.remove('hidden');
+    }
+    
+    function hideForm() {
+      document.getElementById('form-container').classList.add('hidden');
+    }
+    
+    function submitForm(model, action, id) {
+      let payload = {};
+      const inputs = document.querySelectorAll('#form-container input');
+      inputs.forEach(input => {
+        const field = input.id.replace('form-','');
+        payload[field] = input.value;
+      });
+      if (action === 'add') {
+        fetch(`${baseURL}/${model}`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-admin-password': 'secret-admin-password'
+          },
+          body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(`${model} added successfully!`);
+          hideForm();
+          fetchData(model);
+        })
+        .catch(err => alert('Error adding record: ' + err));
+      } else if (action === 'edit') {
+        fetch(`${baseURL}/${model}/${id}`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-admin-password': 'secret-admin-password'
+          },
+          body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(`${model} updated successfully!`);
+          hideForm();
+          fetchData(model);
+        })
+        .catch(err => alert('Error updating record: ' + err));
+      }
+    }
+    
+    function deleteRecord(model, id) {
+      if (confirm("Are you sure you want to delete this record?")) {
+        fetch(`${baseURL}/${model}/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'x-admin-password': 'secret-admin-password'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(`${model} deleted successfully!`);
+          fetchData(model);
+        })
+        .catch(err => alert('Error deleting record: ' + err));
+      }
+    }
+  </script>
+</body>
+</html>

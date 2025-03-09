@@ -5,11 +5,13 @@
   <title>My Cart</title>
   <style>
     body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
-    .container { max-width: 900px; margin: 20px auto; background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .container { max-width: 900px; margin: 20px auto; background: #fff; border-radius: 8px; padding: 20px; 
+                 box-shadow: 0 0 10px rgba(0,0,0,0.1); position: relative; }
     h2 { text-align: center; }
-    .nav { text-align: center; margin-bottom: 20px; }
-    .nav a { margin: 0 5px; padding: 8px 16px; background: #007bff; color: #fff; text-decoration: none; border-radius: 4px; }
-    .nav a:hover { background: #0056b3; }
+    /* Fixed Home button */
+    .top-left-button {
+      position: fixed; top: 20px; left: 20px; background: #007bff; color: #fff; padding: 10px 16px; border-radius: 4px; text-decoration: none;
+    }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { padding: 10px; border: 1px solid #ccc; text-align: center; }
     .total { text-align: right; font-weight: bold; margin-top: 10px; }
@@ -32,11 +34,9 @@
   </style>
 </head>
 <body>
+  <a href="home.html" class="top-left-button">🏠 Home</a>
   <div class="container">
     <h2>My Cart</h2>
-    <div class="nav">
-      <a href="home.html">🏠 Home</a>
-    </div>
     <div id="cart-items"></div>
     <div class="total" id="cart-total"></div>
     <div style="text-align:center; margin-top:20px;">
@@ -45,10 +45,10 @@
     </div>
     <div id="cart-toast" class="toast"></div>
   </div>
-
+  
   <script>
-    // Aggregate duplicate order items by productId
-    function aggregateCartItems(cart) {
+    // ฟังก์ชันรวมรายการซ้ำสำหรับ order items (reservation จะแสดงแยก)
+    function aggregateOrderItems(cart) {
       let aggregated = [];
       let orderMap = {};
       cart.forEach(item => {
@@ -67,10 +67,10 @@
       aggregated = aggregated.concat(Object.values(orderMap));
       return aggregated;
     }
-
+    
     function loadCart() {
       let cart = JSON.parse(localStorage.getItem('cart')) || [];
-      cart = aggregateCartItems(cart);
+      cart = aggregateOrderItems(cart);
       const container = document.getElementById('cart-items');
       if (cart.length === 0) {
         container.innerHTML = "<p>Your cart is empty.</p>";
@@ -92,13 +92,14 @@
       let total = 0;
       cart.forEach((item, index) => {
         if (item.type === 'reservation') {
-          const countdownId = `countdown-${item.data.id}`;
           html += `<tr>
             <td>Reservation</td>
-            <td>Computer ${item.data.ComputerId} (Discount: ${item.data.discount}%)</td>
-            <td>${item.data.hours} hrs</td>
-            <td>${item.data.total_price}</td>
-            <td><span id="${countdownId}"></span></td>
+            <td>Computer ${item.data.ComputerId} (Discount: <span id="discount-${index}">${item.data.discount}</span>%)</td>
+            <td>
+              <input type="number" value="${item.data.hours}" min="1" onchange="updateReservationHours(${index}, this.value)">
+            </td>
+            <td id="price-${index}">${item.data.total_price}</td>
+            <td><span id="reservation-timer-${item.data.id}"></span></td>
             <td><button onclick="removeItem(${index})">🗑️</button></td>
           </tr>`;
           total += parseFloat(item.data.total_price);
@@ -119,14 +120,18 @@
       document.getElementById('cart-total').textContent = "Total: " + total.toFixed(2);
       startCartCountdowns(cart);
     }
-
+    
     function startCartCountdowns(cart) {
       cart.forEach(item => {
         if (item.type === 'reservation' && item.data.deadline) {
-          const countdownId = `countdown-${item.data.id}`;
+          const countdownId = `reservation-timer-${item.data.id}`;
           const elem = document.getElementById(countdownId);
           if (elem) {
             const interval = setInterval(() => {
+              if (!localStorage.getItem('user')) {
+                clearInterval(interval);
+                return;
+              }
               const now = Date.now();
               const diff = item.data.deadline - now;
               if (diff <= 0) {
@@ -142,14 +147,24 @@
         }
       });
     }
-
-    function removeItem(index) {
+    
+    function updateReservationHours(index, newHours) {
       let cart = JSON.parse(localStorage.getItem('cart')) || [];
-      cart.splice(index, 1);
-      localStorage.setItem('cart', JSON.stringify(cart));
-      loadCart();
+      let item = cart[index];
+      if (item && item.type === 'reservation') {
+        newHours = parseInt(newHours);
+        item.data.hours = newHours;
+        const pricePerHour = item.data.price_per_hour;
+        let discount = (newHours > 1) ? Math.min((newHours - 1) * 5, 45) : 0;
+        item.data.discount = discount;
+        const total = pricePerHour * newHours * (1 - discount / 100);
+        item.data.total_price = total.toFixed(2);
+        cart[index] = item;
+        localStorage.setItem('cart', JSON.stringify(cart));
+        loadCart();
+      }
     }
-
+    
     function updateOrderQuantity(index, newQty) {
       let cart = JSON.parse(localStorage.getItem('cart')) || [];
       let item = cart[index];
@@ -161,24 +176,31 @@
         loadCart();
       }
     }
-
+    
+    function removeItem(index) {
+      let cart = JSON.parse(localStorage.getItem('cart')) || [];
+      cart.splice(index, 1);
+      localStorage.setItem('cart', JSON.stringify(cart));
+      loadCart();
+    }
+    
     function clearCart() {
       localStorage.removeItem('cart');
       loadCart();
       showCartToast("Cart cleared.");
     }
-
+    
     function goToPayment() {
       window.location.href = 'payment.html';
     }
-
+    
     function showCartToast(message) {
       const toast = document.getElementById('cart-toast');
       toast.textContent = message;
       toast.classList.add('show');
       setTimeout(() => { toast.classList.remove('show'); }, 3000);
     }
-
+    
     loadCart();
   </script>
 </body>
