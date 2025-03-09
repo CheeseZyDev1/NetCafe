@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>Payment</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+    .container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); text-align: center; }
+    h2 { margin-bottom: 20px; }
+    select, button { padding: 10px; margin: 10px; }
+    .qr { margin-top: 20px; }
+    .nav a { margin: 0 5px; padding: 8px 16px; background: #007bff; color: #fff; text-decoration: none; border-radius: 4px; }
+    .nav a:hover { background: #0056b3; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Payment</h2>
+    <div class="nav">
+      <a href="cart.html">Back to Cart</a>
+      <a href="home.html">Home</a>
+    </div>
+    <p>เลือกรูปแบบการชำระเงิน:</p>
+    <select id="payment-method">
+      <option value="qr">QR Code</option>
+      <option value="credit">Credit Card</option>
+      <option value="cash">Cash</option>
+    </select>
+    <div>
+      <button onclick="confirmPayment()">💳 Confirm Payment</button>
+      <button onclick="cancelPayment()">Cancel Payment</button>
+    </div>
+    <div class="qr" id="qr-code" style="display:none;">
+      <img src="https://via.placeholder.com/150?text=QR+Code" alt="QR Code">
+    </div>
+  </div>
+
+  <script>
+    const baseURL = 'http://localhost:8000';
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) { window.location.href = 'login.html'; }
+
+    function confirmPayment() {
+      const method = document.getElementById('payment-method').value;
+      if(method === "qr") {
+        document.getElementById('qr-code').style.display = "block";
+      }
+      processPayment();
+    }
+
+    function cancelPayment() {
+      alert("Payment canceled");
+      window.location.href = "cart.html";
+    }
+
+    async function processPayment() {
+      let cart = JSON.parse(localStorage.getItem('cart')) || [];
+      for (let item of cart) {
+        if(item.type === 'reservation'){
+          try {
+            await fetch(`${baseURL}/reservations/${item.data.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: "already reserved" })
+            });
+          } catch (error) {
+            console.error('Error updating reservation:', error);
+          }
+        }
+      }
+      localStorage.removeItem('cart');
+      alert("Payment successful!");
+      window.location.href = "home.html";
+    }
+  </script>
+</body>
+</html>

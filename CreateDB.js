@@ -16,7 +16,7 @@ const User = sequelize.define('User', {
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
   phone_number: { type: DataTypes.STRING, allowNull: true },
   is_vip: { type: DataTypes.BOOLEAN, defaultValue: false },
-  is_admin: { type: DataTypes.BOOLEAN, defaultValue: false }, // <-- เพิ่มฟิลด์ is_admin
+  is_admin: { type: DataTypes.BOOLEAN, defaultValue: false },
 }, { timestamps: true, freezeTableName: true });
 
 // 🖥️ Computers (เครื่องคอมพิวเตอร์)
@@ -79,10 +79,15 @@ const Notification = sequelize.define('Notification', {
 }, { timestamps: true });
 
 // 📅 Reservations (การจองเครื่องคอมพิวเตอร์)
-// ลูกค้าสามารถจองเครื่องคอมพิวเตอร์ในช่วงเวลาที่ต้องการได้
+// เพิ่มฟิลด์ใหม่เพื่อรองรับรายละเอียดการจอง
 const Reservation = sequelize.define('Reservation', {
   reservation_time: { type: DataTypes.DATE, allowNull: false },
   status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+  hours: { type: DataTypes.INTEGER, allowNull: true },       // จำนวนชั่วโมงที่จอง
+  discount: { type: DataTypes.FLOAT, allowNull: true },        // ส่วนลด (เปอร์เซ็นต์)
+  total_price: { type: DataTypes.FLOAT, allowNull: true },     // ราคาสุทธิหลังหักส่วนลด
+  start_time: { type: DataTypes.DATE, allowNull: true },       // เวลาเริ่มต้นใช้งาน
+  end_time: { type: DataTypes.DATE, allowNull: true },         // เวลาสิ้นสุดใช้งาน
 }, { timestamps: true });
 
 // 🌐 **Relationships (ความสัมพันธ์ของตาราง)**
@@ -110,7 +115,7 @@ Coupon.belongsTo(User, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 User.hasMany(Notification, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 Notification.belongsTo(User, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 
-// **ความสัมพันธ์สำหรับ Reservation**
+// ความสัมพันธ์สำหรับ Reservation
 User.hasMany(Reservation, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 Reservation.belongsTo(User, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 
@@ -156,5 +161,5 @@ module.exports = {
   Coupon,
   Report,
   Notification,
-  Reservation, // <-- ส่งออก Reservation
+  Reservation,
 };

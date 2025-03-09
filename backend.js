@@ -17,23 +17,11 @@ const {
 } = require('./CreateDB');
 
 const app = express();
-const port = process.env.PORT || 3000;
-
-// ใช้งาน CORS เพื่อให้ Frontend สามารถเรียก API ได้
-app.use(cors());
+const port = process.env.PORT || 8000;
 
 // Middleware สำหรับแปลงข้อมูล JSON
+app.use(cors());
 app.use(express.json());
-
-// Middleware สำหรับตรวจสอบสิทธิ์ของแอดมิน
-const adminAuth = (req, res, next) => {
-  const token = req.headers['x-admin-auth'];
-  if (token && token === 'secret-admin-token') {
-    next();
-  } else {
-    res.status(403).json({ error: 'Forbidden: Admins only' });
-  }
-};
 
 /* ================================
    Authentication Endpoints
@@ -56,7 +44,7 @@ app.post('/login', async (req, res) => {
 });
 
 // Endpoint สำหรับ Register (สมัครสมาชิก)
-// (หมายเหตุ: Endpoint นี้ใช้สำหรับการสร้างผู้ใช้ใหม่ ไม่ต้องใช้ adminAuth)
+// (หมายเหตุ: Endpoint นี้ใช้สำหรับการสร้างผู้ใช้ใหม่ ไม่ต้องตรวจสอบ admin)
 app.post('/users', async (req, res) => {
   try {
     const newUser = await User.create(req.body);
@@ -70,7 +58,7 @@ app.post('/users', async (req, res) => {
    Endpoints สำหรับ Users
 ================================ */
 
-app.get('/users', adminAuth, async (req, res) => {
+app.get('/users', async (req, res) => {
   try {
     const users = await User.findAll({
       include: [Session, Payment, Order, Notification],
@@ -81,7 +69,7 @@ app.get('/users', adminAuth, async (req, res) => {
   }
 });
 
-app.get('/users/:id', adminAuth, async (req, res) => {
+app.get('/users/:id', async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id, {
       include: [Session, Payment, Order, Notification],
@@ -93,7 +81,7 @@ app.get('/users/:id', adminAuth, async (req, res) => {
   }
 });
 
-app.put('/users/:id', adminAuth, async (req, res) => {
+app.put('/users/:id', async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);
     if (user) {
@@ -105,7 +93,7 @@ app.put('/users/:id', adminAuth, async (req, res) => {
   }
 });
 
-app.delete('/users/:id', adminAuth, async (req, res) => {
+app.delete('/users/:id', async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);
     if (user) {
@@ -140,7 +128,7 @@ app.get('/computers/:id', async (req, res) => {
   }
 });
 
-app.post('/computers', adminAuth, async (req, res) => {
+app.post('/computers', async (req, res) => {
   try {
     const newComputer = await Computer.create(req.body);
     res.status(201).json(newComputer);
@@ -149,7 +137,7 @@ app.post('/computers', adminAuth, async (req, res) => {
   }
 });
 
-app.put('/computers/:id', adminAuth, async (req, res) => {
+app.put('/computers/:id', async (req, res) => {
   try {
     const computer = await Computer.findByPk(req.params.id);
     if (computer) {
@@ -161,7 +149,7 @@ app.put('/computers/:id', adminAuth, async (req, res) => {
   }
 });
 
-app.delete('/computers/:id', adminAuth, async (req, res) => {
+app.delete('/computers/:id', async (req, res) => {
   try {
     const computer = await Computer.findByPk(req.params.id);
     if (computer) {
@@ -177,7 +165,7 @@ app.delete('/computers/:id', adminAuth, async (req, res) => {
    Endpoints สำหรับ Sessions
 ================================ */
 
-app.get('/sessions', adminAuth, async (req, res) => {
+app.get('/sessions', async (req, res) => {
   try {
     const sessions = await Session.findAll();
     res.json(sessions);
@@ -186,7 +174,7 @@ app.get('/sessions', adminAuth, async (req, res) => {
   }
 });
 
-app.get('/sessions/:id', adminAuth, async (req, res) => {
+app.get('/sessions/:id', async (req, res) => {
   try {
     const session = await Session.findByPk(req.params.id);
     if (session) res.json(session);
@@ -205,7 +193,7 @@ app.post('/sessions', async (req, res) => {
   }
 });
 
-app.put('/sessions/:id', adminAuth, async (req, res) => {
+app.put('/sessions/:id', async (req, res) => {
   try {
     const session = await Session.findByPk(req.params.id);
     if (session) {
@@ -217,7 +205,7 @@ app.put('/sessions/:id', adminAuth, async (req, res) => {
   }
 });
 
-app.delete('/sessions/:id', adminAuth, async (req, res) => {
+app.delete('/sessions/:id', async (req, res) => {
   try {
     const session = await Session.findByPk(req.params.id);
     if (session) {
@@ -233,7 +221,7 @@ app.delete('/sessions/:id', adminAuth, async (req, res) => {
    Endpoints สำหรับ Payments
 ================================ */
 
-app.get('/payments', adminAuth, async (req, res) => {
+app.get('/payments', async (req, res) => {
   try {
     const payments = await Payment.findAll();
     res.json(payments);
@@ -242,7 +230,7 @@ app.get('/payments', adminAuth, async (req, res) => {
   }
 });
 
-app.get('/payments/:id', adminAuth, async (req, res) => {
+app.get('/payments/:id', async (req, res) => {
   try {
     const payment = await Payment.findByPk(req.params.id);
     if (payment) res.json(payment);
@@ -261,7 +249,7 @@ app.post('/payments', async (req, res) => {
   }
 });
 
-app.put('/payments/:id', adminAuth, async (req, res) => {
+app.put('/payments/:id', async (req, res) => {
   try {
     const payment = await Payment.findByPk(req.params.id);
     if (payment) {
@@ -273,7 +261,7 @@ app.put('/payments/:id', adminAuth, async (req, res) => {
   }
 });
 
-app.delete('/payments/:id', adminAuth, async (req, res) => {
+app.delete('/payments/:id', async (req, res) => {
   try {
     const payment = await Payment.findByPk(req.params.id);
     if (payment) {
@@ -289,7 +277,7 @@ app.delete('/payments/:id', adminAuth, async (req, res) => {
    Endpoints สำหรับ Orders
 ================================ */
 
-app.get('/orders', adminAuth, async (req, res) => {
+app.get('/orders', async (req, res) => {
   try {
     const orders = await Order.findAll({ include: [OrderItem] });
     res.json(orders);
@@ -298,7 +286,7 @@ app.get('/orders', adminAuth, async (req, res) => {
   }
 });
 
-app.get('/orders/:id', adminAuth, async (req, res) => {
+app.get('/orders/:id', async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id, { include: [OrderItem] });
     if (order) res.json(order);
@@ -317,7 +305,7 @@ app.post('/orders', async (req, res) => {
   }
 });
 
-app.put('/orders/:id', adminAuth, async (req, res) => {
+app.put('/orders/:id', async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id);
     if (order) {
@@ -329,7 +317,7 @@ app.put('/orders/:id', adminAuth, async (req, res) => {
   }
 });
 
-app.delete('/orders/:id', adminAuth, async (req, res) => {
+app.delete('/orders/:id', async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id);
     if (order) {
@@ -345,7 +333,7 @@ app.delete('/orders/:id', adminAuth, async (req, res) => {
    Endpoints สำหรับ OrderItems
 ================================ */
 
-app.get('/orderitems', adminAuth, async (req, res) => {
+app.get('/orderitems', async (req, res) => {
   try {
     const orderItems = await OrderItem.findAll();
     res.json(orderItems);
@@ -354,7 +342,7 @@ app.get('/orderitems', adminAuth, async (req, res) => {
   }
 });
 
-app.get('/orderitems/:id', adminAuth, async (req, res) => {
+app.get('/orderitems/:id', async (req, res) => {
   try {
     const orderItem = await OrderItem.findByPk(req.params.id);
     if (orderItem) res.json(orderItem);
@@ -373,7 +361,7 @@ app.post('/orderitems', async (req, res) => {
   }
 });
 
-app.put('/orderitems/:id', adminAuth, async (req, res) => {
+app.put('/orderitems/:id', async (req, res) => {
   try {
     const orderItem = await OrderItem.findByPk(req.params.id);
     if (orderItem) {
@@ -385,7 +373,7 @@ app.put('/orderitems/:id', adminAuth, async (req, res) => {
   }
 });
 
-app.delete('/orderitems/:id', adminAuth, async (req, res) => {
+app.delete('/orderitems/:id', async (req, res) => {
   try {
     const orderItem = await OrderItem.findByPk(req.params.id);
     if (orderItem) {
@@ -420,7 +408,7 @@ app.get('/products/:id', async (req, res) => {
   }
 });
 
-app.post('/products', adminAuth, async (req, res) => {
+app.post('/products', async (req, res) => {
   try {
     const newProduct = await Product.create(req.body);
     res.status(201).json(newProduct);
@@ -429,7 +417,7 @@ app.post('/products', adminAuth, async (req, res) => {
   }
 });
 
-app.put('/products/:id', adminAuth, async (req, res) => {
+app.put('/products/:id', async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
     if (product) {
@@ -441,7 +429,7 @@ app.put('/products/:id', adminAuth, async (req, res) => {
   }
 });
 
-app.delete('/products/:id', adminAuth, async (req, res) => {
+app.delete('/products/:id', async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
     if (product) {
@@ -457,7 +445,7 @@ app.delete('/products/:id', adminAuth, async (req, res) => {
    Endpoints สำหรับ Coupons
 ================================ */
 
-app.get('/coupons', adminAuth, async (req, res) => {
+app.get('/coupons', async (req, res) => {
   try {
     const coupons = await Coupon.findAll();
     res.json(coupons);
@@ -466,7 +454,7 @@ app.get('/coupons', adminAuth, async (req, res) => {
   }
 });
 
-app.get('/coupons/:id', adminAuth, async (req, res) => {
+app.get('/coupons/:id', async (req, res) => {
   try {
     const coupon = await Coupon.findByPk(req.params.id);
     if (coupon) res.json(coupon);
@@ -476,7 +464,7 @@ app.get('/coupons/:id', adminAuth, async (req, res) => {
   }
 });
 
-app.post('/coupons', adminAuth, async (req, res) => {
+app.post('/coupons', async (req, res) => {
   try {
     const newCoupon = await Coupon.create(req.body);
     res.status(201).json(newCoupon);
@@ -485,7 +473,7 @@ app.post('/coupons', adminAuth, async (req, res) => {
   }
 });
 
-app.put('/coupons/:id', adminAuth, async (req, res) => {
+app.put('/coupons/:id', async (req, res) => {
   try {
     const coupon = await Coupon.findByPk(req.params.id);
     if (coupon) {
@@ -497,7 +485,7 @@ app.put('/coupons/:id', adminAuth, async (req, res) => {
   }
 });
 
-app.delete('/coupons/:id', adminAuth, async (req, res) => {
+app.delete('/coupons/:id', async (req, res) => {
   try {
     const coupon = await Coupon.findByPk(req.params.id);
     if (coupon) {
@@ -513,7 +501,7 @@ app.delete('/coupons/:id', adminAuth, async (req, res) => {
    Endpoints สำหรับ Reports
 ================================ */
 
-app.get('/reports', adminAuth, async (req, res) => {
+app.get('/reports', async (req, res) => {
   try {
     const reports = await Report.findAll();
     res.json(reports);
@@ -522,7 +510,7 @@ app.get('/reports', adminAuth, async (req, res) => {
   }
 });
 
-app.get('/reports/:id', adminAuth, async (req, res) => {
+app.get('/reports/:id', async (req, res) => {
   try {
     const report = await Report.findByPk(req.params.id);
     if (report) res.json(report);
@@ -532,7 +520,7 @@ app.get('/reports/:id', adminAuth, async (req, res) => {
   }
 });
 
-app.post('/reports', adminAuth, async (req, res) => {
+app.post('/reports', async (req, res) => {
   try {
     const newReport = await Report.create(req.body);
     res.status(201).json(newReport);
@@ -541,7 +529,7 @@ app.post('/reports', adminAuth, async (req, res) => {
   }
 });
 
-app.put('/reports/:id', adminAuth, async (req, res) => {
+app.put('/reports/:id', async (req, res) => {
   try {
     const report = await Report.findByPk(req.params.id);
     if (report) {
@@ -553,7 +541,7 @@ app.put('/reports/:id', adminAuth, async (req, res) => {
   }
 });
 
-app.delete('/reports/:id', adminAuth, async (req, res) => {
+app.delete('/reports/:id', async (req, res) => {
   try {
     const report = await Report.findByPk(req.params.id);
     if (report) {
@@ -569,7 +557,7 @@ app.delete('/reports/:id', adminAuth, async (req, res) => {
    Endpoints สำหรับ Notifications
 ================================ */
 
-app.get('/notifications', adminAuth, async (req, res) => {
+app.get('/notifications', async (req, res) => {
   try {
     const notifications = await Notification.findAll();
     res.json(notifications);
@@ -578,7 +566,7 @@ app.get('/notifications', adminAuth, async (req, res) => {
   }
 });
 
-app.get('/notifications/:id', adminAuth, async (req, res) => {
+app.get('/notifications/:id', async (req, res) => {
   try {
     const notification = await Notification.findByPk(req.params.id);
     if (notification) res.json(notification);
@@ -588,7 +576,7 @@ app.get('/notifications/:id', adminAuth, async (req, res) => {
   }
 });
 
-app.post('/notifications', adminAuth, async (req, res) => {
+app.post('/notifications', async (req, res) => {
   try {
     const newNotification = await Notification.create(req.body);
     res.status(201).json(newNotification);
@@ -597,7 +585,7 @@ app.post('/notifications', adminAuth, async (req, res) => {
   }
 });
 
-app.put('/notifications/:id', adminAuth, async (req, res) => {
+app.put('/notifications/:id', async (req, res) => {
   try {
     const notification = await Notification.findByPk(req.params.id);
     if (notification) {
@@ -609,7 +597,7 @@ app.put('/notifications/:id', adminAuth, async (req, res) => {
   }
 });
 
-app.delete('/notifications/:id', adminAuth, async (req, res) => {
+app.delete('/notifications/:id', async (req, res) => {
   try {
     const notification = await Notification.findByPk(req.params.id);
     if (notification) {
@@ -634,7 +622,7 @@ app.post('/reservations', async (req, res) => {
   }
 });
 
-app.get('/reservations', adminAuth, async (req, res) => {
+app.get('/reservations', async (req, res) => {
   try {
     const reservations = await Reservation.findAll({
       include: [User, Computer],
@@ -645,7 +633,7 @@ app.get('/reservations', adminAuth, async (req, res) => {
   }
 });
 
-app.get('/reservations/:id', adminAuth, async (req, res) => {
+app.get('/reservations/:id', async (req, res) => {
   try {
     const reservation = await Reservation.findByPk(req.params.id, {
       include: [User, Computer],
@@ -657,7 +645,7 @@ app.get('/reservations/:id', adminAuth, async (req, res) => {
   }
 });
 
-app.put('/reservations/:id', adminAuth, async (req, res) => {
+app.put('/reservations/:id', async (req, res) => {
   try {
     const reservation = await Reservation.findByPk(req.params.id);
     if (reservation) {
@@ -669,7 +657,7 @@ app.put('/reservations/:id', adminAuth, async (req, res) => {
   }
 });
 
-app.delete('/reservations/:id', adminAuth, async (req, res) => {
+app.delete('/reservations/:id', async (req, res) => {
   try {
     const reservation = await Reservation.findByPk(req.params.id);
     if (reservation) {

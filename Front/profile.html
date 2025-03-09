@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>My Profile</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+    .container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    h2 { text-align: center; }
+    .nav { text-align: center; margin-bottom: 20px; }
+    .nav a { margin: 0 5px; padding: 8px 16px; background: #007bff; color: #fff; text-decoration: none; border-radius: 4px; }
+    .nav a:hover { background: #0056b3; }
+    form { display: flex; flex-direction: column; }
+    label { margin-bottom: 5px; font-weight: bold; }
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    input[type="tel"] { margin-bottom: 15px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    input[type="file"] { margin-bottom: 15px; }
+    button { width: 120px; padding: 8px; background: #28a745; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #218838; }
+    .message { margin-top: 10px; text-align: center; font-weight: bold; }
+    .profile-pic { width: 150px; height: 150px; object-fit: cover; border-radius: 50%; margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>My Profile</h2>
+    <div class="nav">
+      <a href="home.html">🏠 Home</a>
+    </div>
+    <img id="profilePicPreview" class="profile-pic" src="https://via.placeholder.com/150" alt="Profile Picture">
+    <form id="profile-form">
+      <label for="username">Username</label>
+      <input type="text" id="username" required>
+
+      <label for="email">Email</label>
+      <input type="email" id="email" required>
+
+      <label for="phone">Phone Number</label>
+      <input type="tel" id="phone" required>
+
+      <label for="password">New Password (optional)</label>
+      <input type="password" id="password">
+
+      <label for="profilePic">Profile Picture</label>
+      <input type="file" id="profilePic" accept="image/*">
+
+      <button type="submit">Update</button>
+    </form>
+    <div class="message" id="profile-message"></div>
+  </div>
+
+  <script>
+    const baseURL = 'http://localhost:8000';
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) { window.location.href = 'login.html'; }
+
+    const usernameEl = document.getElementById('username');
+    const emailEl = document.getElementById('email');
+    const phoneEl = document.getElementById('phone');
+    const passwordEl = document.getElementById('password');
+    const profilePicInput = document.getElementById('profilePic');
+    const profilePicPreview = document.getElementById('profilePicPreview');
+    const messageEl = document.getElementById('profile-message');
+
+    async function loadProfile() {
+      try {
+        const res = await fetch(`${baseURL}/users/${user.id}`);
+        const data = await res.json();
+        if (res.ok) {
+          usernameEl.value = data.username;
+          emailEl.value = data.email;
+          phoneEl.value = data.phone_number;
+          if(data.profilePicUrl) { profilePicPreview.src = data.profilePicUrl; }
+        } else {
+          messageEl.textContent = data.error || 'Cannot load profile';
+        }
+      } catch (error) {
+        messageEl.textContent = 'Error: ' + error.message;
+      }
+    }
+
+    profilePicInput.addEventListener('change', function(){
+      const file = this.files[0];
+      if(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) { profilePicPreview.src = e.target.result; }
+        reader.readAsDataURL(file);
+      }
+    });
+
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const updatedData = {
+        username: usernameEl.value,
+        email: emailEl.value,
+        phone_number: phoneEl.value
+      };
+      if(passwordEl.value) { updatedData.password = passwordEl.value; }
+      if(profilePicInput.files[0]) {
+        const file = profilePicInput.files[0];
+        const reader = new FileReader();
+        reader.onloadend = async function() {
+          updatedData.profilePicUrl = reader.result;
+          await updateProfile(updatedData);
+        }
+        reader.readAsDataURL(file);
+      } else {
+        await updateProfile(updatedData);
+      }
+    });
+
+    async function updateProfile(data) {
+      try {
+        const res = await fetch(`${baseURL}/users/${user.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const updatedUser = await res.json();
+        if(res.ok) {
+          messageEl.style.color = 'green';
+          messageEl.textContent = 'Profile updated successfully!';
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        } else {
+          messageEl.style.color = 'red';
+          messageEl.textContent = updatedUser.error || 'Update failed!';
+        }
+      } catch (error) {
+        messageEl.style.color = 'red';
+        messageEl.textContent = 'Error: ' + error.message;
+      }
+    }
+
+    loadProfile();
+  </script>
+</body>
+</html>

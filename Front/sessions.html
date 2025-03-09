@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>My Sessions</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+    .container { max-width: 800px; margin: 20px auto; background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    h2 { text-align: center; }
+    .nav { text-align: center; margin-bottom: 20px; }
+    .nav a { margin: 0 5px; padding: 8px 16px; background: #007bff; color: #fff; text-decoration: none; border-radius: 4px; }
+    .nav a:hover { background: #0056b3; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; border: 1px solid #ccc; text-align: center; }
+    .timer { font-weight: bold; color: green; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>My Sessions</h2>
+    <div class="nav">
+      <a href="home.html">🏠 Home</a>
+      <a href="reservation.html">🖥 Reservation</a>
+      <a href="cart.html">🛒 Cart</a>
+      <a href="order.html">🍔 Order</a>
+    </div>
+    <div id="session-list"></div>
+  </div>
+
+  <script>
+    const baseURL = 'http://localhost:8000';
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) { window.location.href = 'login.html'; }
+
+    async function fetchSessions() {
+      try {
+        const res = await fetch(`${baseURL}/users/${user.id}`);
+        const data = await res.json();
+        displaySessions(data.Sessions || []);
+      } catch (error) {
+        console.error('Error fetching sessions:', error);
+      }
+    }
+
+    function displaySessions(sessions) {
+      if (sessions.length === 0) {
+        document.getElementById('session-list').innerHTML = '<p>No active sessions.</p>';
+        return;
+      }
+      let html = `<table>
+         <thead>
+           <tr>
+             <th>Computer</th>
+             <th>Start Time</th>
+             <th>End Time</th>
+             <th>Time Remaining</th>
+           </tr>
+         </thead>
+         <tbody>`;
+      sessions.forEach(session => {
+         // สมมติ session มี Computer (object) และ start_time, end_time
+         const compName = (session.Computer && session.Computer.name) ? session.Computer.name : 'Unknown';
+         html += `<tr id="session-${session.id}">
+            <td>${compName}</td>
+            <td>${new Date(session.start_time).toLocaleString()}</td>
+            <td>${session.end_time ? new Date(session.end_time).toLocaleString() : 'Ongoing'}</td>
+            <td><span class="timer" id="timer-${session.id}"></span></td>
+         </tr>`;
+         if (session.end_time) {
+            startCountdown(session.id, new Date(session.end_time));
+         }
+      });
+      html += `</tbody></table>`;
+      document.getElementById('session-list').innerHTML = html;
+    }
+
+    function startCountdown(sessionId, endTime) {
+      const timerEl = document.getElementById(`timer-${sessionId}`);
+      const interval = setInterval(() => {
+         const now = new Date();
+         const diff = endTime - now;
+         if (diff <= 0) {
+            timerEl.textContent = "Expired";
+            clearInterval(interval);
+         } else {
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            timerEl.textContent = `${hours}h ${minutes}m ${seconds}s`;
+         }
+      }, 1000);
+    }
+
+    fetchSessions();
+  </script>
+</body>
+</html>

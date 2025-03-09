@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>Order Products</title>
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px; }
+    .container { max-width: 900px; margin: 20px auto; background-color: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    h2 { text-align: center; }
+    .nav { text-align: center; margin-bottom: 20px; }
+    .nav a { margin: 0 5px; padding: 8px 16px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 4px; }
+    .nav a:hover { background-color: #0056b3; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; border: 1px solid #ccc; text-align: center; }
+    input[type="number"] { width: 60px; }
+    .out { background-color: #ccc; }
+    .out span { color: red; font-weight: bold; }
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 5px;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Order Products</h2>
+    <div class="nav">
+      <a href="home.html">🏠 Home</a>
+      <a href="cart.html">🛒 Cart</a>
+    </div>
+    <div id="product-list"></div>
+    <div id="order-message" class="toast"></div>
+  </div>
+
+  <script>
+    const baseURL = 'http://localhost:8000';
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) { window.location.href = 'login.html'; }
+
+    async function fetchProducts() {
+      try {
+        const res = await fetch(`${baseURL}/products`);
+        const products = await res.json();
+        displayProducts(products);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
+    }
+
+    function displayProducts(products) {
+      let html = `<table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Product Name</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Quantity</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>`;
+      products.forEach(p => {
+        const isOut = (p.stock !== undefined && p.stock <= 0);
+        html += `<tr ${isOut ? 'class="out"' : ''}>
+          <td>${p.id}</td>
+          <td>${p.name}</td>
+          <td>${p.price}</td>
+          <td>${p.stock !== undefined ? p.stock : 'N/A'}</td>
+          <td>
+            ${isOut ? '<span>Out</span>' : `<input type="number" id="qty-${p.id}" value="1" min="1">`}
+          </td>
+          <td>
+            ${isOut ? '' : `<button onclick="orderProduct(${p.id}, '${p.name}', ${p.price}, ${p.stock})">Order</button>`}
+          </td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      document.getElementById('product-list').innerHTML = html;
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('order-message');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    }
+
+    function orderProduct(productId, productName, productPrice, stock) {
+      const qty = parseInt(document.getElementById(`qty-${productId}`).value) || 1;
+      if (qty > stock) {
+         showToast(`Insufficient stock for ${productName}.`);
+         return;
+      }
+      const totalPrice = (productPrice * qty).toFixed(2);
+      const orderItem = {
+         type: 'order',
+         data: {
+            id: Date.now(), // temporary id
+            productId,
+            productName,
+            quantity: qty,
+            unit_price: productPrice,
+            total_price: totalPrice
+         }
+      };
+      let cart = JSON.parse(localStorage.getItem('cart')) || [];
+      cart.push(orderItem);
+      localStorage.setItem('cart', JSON.stringify(cart));
+      showToast(`Added ${qty} x ${productName} to cart. Total: ${totalPrice}`);
+      // Optionally update displayed stock in UI
+      const newStock = stock - qty;
+      document.querySelector(`#qty-${productId}`).parentElement.previousElementSibling.textContent = newStock;
+      if (newStock <= 0) {
+         const row = document.querySelector(`#qty-${productId}`).closest('tr');
+         row.classList.add('out');
+         row.querySelector('td:nth-child(5)').innerHTML = '<span>Out</span>';
+         row.querySelector('td:nth-child(6)').innerHTML = '';
+      }
+    }
+
+    fetchProducts();
+  </script>
+</body>
+</html>
