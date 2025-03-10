@@ -1,6 +1,11 @@
 // backend.js
 const express = require('express');
 const cors = require('cors');
+const axios = require('axios');
+const bodyParser = require('body-parser');
+const path = require('path');
+const sequelize = require('sequelize');
+const app = express();
 const {
   sequelize,
   User,
@@ -16,8 +21,10 @@ const {
   Reservation,
 } = require('./CreateDB');
 
-const app = express();
-const port = process.env.PORT || 8000;
+
+//const port = process.env.PORT || 8000;
+const dbUrl = 'postgres://webadmin:XYIcvc98762@node71725-noderest-67.proen.app.ruk-com.cloud:11749/login';
+const sequelize = new Sequelize(dbUrl);
 
 // Middleware สำหรับแปลงข้อมูล JSON และเปิดใช้งาน CORS
 app.use(cors());
