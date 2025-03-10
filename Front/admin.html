@@ -15,6 +15,7 @@
     a {
       text-decoration: none;
       color: inherit;
+      display: block;
     }
     button {
       cursor: pointer;
@@ -37,16 +38,6 @@
       margin: 0;
       font-size: 24px;
     }
-    .logout-btn {
-      position: fixed;
-      top: 15px;
-      right: 20px;
-      background: #dc3545;
-      border: none;
-      padding: 8px 16px;
-      color: #fff;
-      border-radius: 4px;
-    }
 
     /* Sidebar */
     .sidebar {
@@ -67,7 +58,6 @@
       text-align: center;
     }
     .sidebar a {
-      display: block;
       padding: 10px 15px;
       margin: 5px 0;
       background: #495057;
@@ -76,6 +66,15 @@
     }
     .sidebar a:hover {
       background: #6c757d;
+    }
+    /* Logout Link (สีแดง) และ Custom Data */
+    .sidebar .logout-link {
+      background: #dc3545 !important;
+      text-align: center;
+      color: #fff !important;
+    }
+    .sidebar .logout-link:hover {
+      background: #c82333 !important;
     }
 
     /* Content Area */
@@ -168,67 +167,87 @@
   </style>
 </head>
 <body>
+  <!-- Header -->
   <div class="header">
     <h1>Admin Dashboard</h1>
   </div>
-  <button class="logout-btn" onclick="logout()">Logout</button>
   
+  <!-- Sidebar -->
   <div class="sidebar">
     <h3>Manage</h3>
     <a href="#" onclick="loadSection('users')">Users</a>
     <a href="#" onclick="loadSection('computers')">Computers</a>
     <a href="#" onclick="loadSection('sessions')">Sessions</a>
-    <a href="#" onclick="loadSection('payments')">Payments</a>
     <a href="#" onclick="loadSection('orders')">Orders</a>
-    <a href="#" onclick="loadSection('orderitems')">Order Items</a>
     <a href="#" onclick="loadSection('products')">Products</a>
-    <a href="#" onclick="loadSection('coupons')">Coupons</a>
-    <a href="#" onclick="loadSection('reports')">Reports</a>
-    <a href="#" onclick="loadSection('notifications')">Notifications</a>
     <a href="#" onclick="loadSection('reservations')">Reservations</a>
+    <a href="#" onclick="loadCustomerData()">Customer Data</a>
+    <a href="#" class="logout-link" onclick="logout()">Logout</a>
   </div>
   
+  <!-- Content Area -->
   <div class="content">
     <h2 id="section-title">Welcome to Admin Dashboard</h2>
     <div id="section-content">
-      <p> Select a section from the sidebar to manage data.</p>
+      <p>Select a section from the sidebar to manage data.</p>
+    </div>
+    <!-- Customer Data Section -->
+    <div id="customer-content" class="hidden">
+      <h3>Customer Data</h3>
+      <label for="customer-id">Enter Customer ID:</label>
+      <input type="text" id="customer-id" placeholder="Customer ID">
+      <button class="btn" onclick="viewCustomerProfile()">View Profile</button>
+      <button class="btn" onclick="viewCustomerSessions()">View Sessions</button>
+      <button class="btn" onclick="viewCustomerOrders()">View Orders</button>
+      <div id="customer-data-output" style="margin-top:20px;"></div>
     </div>
   </div>
   
   <script>
     const baseURL = 'http://localhost:8000';
-    
+
     // ตรวจสอบ admin จาก localStorage
     const adminData = JSON.parse(localStorage.getItem('admin'));
     if (!adminData) {
       window.location.href = 'login.html';
     }
-    
+
     function logout() {
       localStorage.removeItem('admin');
       window.location.href = 'login.html';
     }
-    
+
+    // Mapping ของฟิลด์สำหรับแต่ละโมเดล
+    const formFields = {
+      users: ["username", "password", "email", "phone_number", "is_admin", "is_vip"],
+      computers: ["name", "status", "last_used"],
+      sessions: ["start_time", "end_time", "total_price", "user_id", "computer_id"],
+      orders: ["total_price", "status", "user_id"],
+      products: ["name", "price", "category"],
+      reservations: ["reservation_time", "status", "hours", "total_price", "user_id", "computer_id"]
+    };
+
     function loadSection(model) {
+      // ซ่อนส่วน Customer Data เมื่อเลือกโมเดลอื่น
+      document.getElementById('customer-content').classList.add('hidden');
+      document.getElementById('section-content').classList.remove('hidden');
       document.getElementById('section-title').textContent = model.charAt(0).toUpperCase() + model.slice(1);
       fetchData(model);
     }
-    
+
     function fetchData(model) {
       fetch(`${baseURL}/${model}`, {
-        headers: {
-          'x-admin-password': 'secret-admin-password'
-        }
+        headers: { 'x-admin-password': 'secret-admin-password' }
       })
-        .then(response => response.json())
-        .then(data => {
-          renderTable(model, data);
-        })
-        .catch(err => {
-          document.getElementById('section-content').innerHTML = `<p>Error loading data: ${err}</p>`;
-        });
+      .then(response => response.json())
+      .then(data => {
+        renderTable(model, data);
+      })
+      .catch(err => {
+        document.getElementById('section-content').innerHTML = `<p>Error loading data: ${err}</p>`;
+      });
     }
-    
+
     function renderTable(model, data) {
       let html = `<button class="btn add" onclick="showForm('${model}', 'add')">Add New</button>`;
       html += `<table><thead><tr>`;
@@ -256,11 +275,10 @@
       html += `<div id="form-container" class="form-container hidden"></div>`;
       document.getElementById('section-content').innerHTML = html;
     }
-    
+
     function showForm(model, action, record = {}) {
+      const fields = formFields[model] || [];
       let formHtml = `<h3>${action === 'add' ? 'Add New' : 'Edit'} ${model.charAt(0).toUpperCase() + model.slice(1)}</h3>`;
-      // สำหรับตัวอย่างนี้ เราจะใช้ keys ของ record ถ้าแก้ไข, หรือ field สมมุติสำหรับเพิ่มใหม่
-      const fields = action === 'edit' ? Object.keys(record) : ["field1", "field2"];
       fields.forEach(field => {
         if (action === 'add' && field === 'id') return;
         const value = record[field] || '';
@@ -272,16 +290,16 @@
       document.getElementById('form-container').innerHTML = formHtml;
       document.getElementById('form-container').classList.remove('hidden');
     }
-    
+
     function hideForm() {
       document.getElementById('form-container').classList.add('hidden');
     }
-    
+
     function submitForm(model, action, id) {
       let payload = {};
       const inputs = document.querySelectorAll('#form-container input');
       inputs.forEach(input => {
-        const field = input.id.replace('form-','');
+        const field = input.id.replace('form-', '');
         payload[field] = input.value;
       });
       if (action === 'add') {
@@ -318,7 +336,7 @@
         .catch(err => alert('Error updating record: ' + err));
       }
     }
-    
+
     function deleteRecord(model, id) {
       if (confirm("Are you sure you want to delete this record?")) {
         fetch(`${baseURL}/${model}/${id}`, {
@@ -334,6 +352,147 @@
         })
         .catch(err => alert('Error deleting record: ' + err));
       }
+    }
+
+    /* Customer Data Section */
+    function loadCustomerData() {
+      // ซ่อนส่วน CRUD ทั่วไป
+      document.getElementById('section-content').classList.add('hidden');
+      document.getElementById('section-title').textContent = "Customer Data";
+      document.getElementById('customer-content').classList.remove('hidden');
+      document.getElementById('customer-data-output').innerHTML = "";
+    }
+
+    function viewCustomerProfile() {
+      const customerId = document.getElementById('customer-id').value;
+      if (!customerId) {
+        alert("Please enter a Customer ID");
+        return;
+      }
+      fetch(`${baseURL}/users/${customerId}`, {
+        headers: { 'x-admin-password': 'secret-admin-password' }
+      })
+      .then(response => response.json())
+      .then(data => {
+        let output = `<h4>Customer Profile</h4>`;
+        output += `<div id="customer-profile-view">`;
+        for (let key in data) {
+          output += `<p><strong>${key}:</strong> ${data[key]}</p>`;
+        }
+        output += `</div>`;
+        output += `<button class="btn edit" onclick="editCustomerProfile('${customerId}')">Edit Profile</button>`;
+        document.getElementById('customer-data-output').innerHTML = output;
+      })
+      .catch(err => {
+        document.getElementById('customer-data-output').innerHTML = `<p>Error: ${err}</p>`;
+      });
+    }
+
+    function editCustomerProfile(customerId) {
+      fetch(`${baseURL}/users/${customerId}`, {
+        headers: { 'x-admin-password': 'secret-admin-password' }
+      })
+      .then(response => response.json())
+      .then(data => {
+        let formHtml = `<h4>Edit Customer Profile</h4>`;
+        formHtml += `<label>Username:</label>
+                     <input type="text" id="edit-username" value="${data.username}"><br>`;
+        formHtml += `<label>Password:</label>
+                     <input type="text" id="edit-password" value="${data.password}"><br>`;
+        formHtml += `<label>Email:</label>
+                     <input type="text" id="edit-email" value="${data.email}"><br>`;
+        formHtml += `<label>Phone Number:</label>
+                     <input type="text" id="edit-phone_number" value="${data.phone_number || ''}"><br>`;
+        formHtml += `<label>is_admin:</label>
+                     <input type="text" id="edit-is_admin" value="${data.is_admin}"><br>`;
+        formHtml += `<label>is_vip:</label>
+                     <input type="text" id="edit-is_vip" value="${data.is_vip}"><br>`;
+        formHtml += `<button class="btn edit" onclick="updateCustomerProfile('${customerId}')">Save</button>`;
+        formHtml += `<button class="btn delete" onclick="viewCustomerProfile()">Cancel</button>`;
+        document.getElementById('customer-data-output').innerHTML = formHtml;
+      })
+      .catch(err => {
+        document.getElementById('customer-data-output').innerHTML = `<p>Error: ${err}</p>`;
+      });
+    }
+
+    function updateCustomerProfile(customerId) {
+      const updatedData = {
+        username: document.getElementById('edit-username').value,
+        password: document.getElementById('edit-password').value,
+        email: document.getElementById('edit-email').value,
+        phone_number: document.getElementById('edit-phone_number').value,
+        is_admin: document.getElementById('edit-is_admin').value,
+        is_vip: document.getElementById('edit-is_vip').value
+      };
+      fetch(`${baseURL}/users/${customerId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-password': 'secret-admin-password'
+        },
+        body: JSON.stringify(updatedData)
+      })
+      .then(response => response.json())
+      .then(data => {
+        alert("Customer profile updated successfully!");
+        viewCustomerProfile();
+      })
+      .catch(err => {
+        alert("Error updating profile: " + err);
+      });
+    }
+
+    function viewCustomerSessions() {
+      const customerId = document.getElementById('customer-id').value;
+      if (!customerId) {
+        alert("Please enter a Customer ID");
+        return;
+      }
+      fetch(`${baseURL}/sessions?user_id=${customerId}`, {
+        headers: { 'x-admin-password': 'secret-admin-password' }
+      })
+      .then(response => response.json())
+      .then(data => {
+        let output = `<h4>Customer Sessions</h4>`;
+        if (data.length > 0) {
+          data.forEach(session => {
+            output += `<p>ID: ${session.id}, Start: ${session.start_time}, End: ${session.end_time}, Total Price: ${session.total_price}</p>`;
+          });
+        } else {
+          output += `<p>No sessions found for this customer.</p>`;
+        }
+        document.getElementById('customer-data-output').innerHTML = output;
+      })
+      .catch(err => {
+        document.getElementById('customer-data-output').innerHTML = `<p>Error: ${err}</p>`;
+      });
+    }
+
+    function viewCustomerOrders() {
+      const customerId = document.getElementById('customer-id').value;
+      if (!customerId) {
+        alert("Please enter a Customer ID");
+        return;
+      }
+      fetch(`${baseURL}/orders?user_id=${customerId}`, {
+        headers: { 'x-admin-password': 'secret-admin-password' }
+      })
+      .then(response => response.json())
+      .then(data => {
+        let output = `<h4>Customer Orders (Receipts)</h4>`;
+        if (data.length > 0) {
+          data.forEach(order => {
+            output += `<p>Order ID: ${order.id}, Total Price: ${order.total_price}, Status: ${order.status}</p>`;
+          });
+        } else {
+          output += `<p>No orders found for this customer.</p>`;
+        }
+        document.getElementById('customer-data-output').innerHTML = output;
+      })
+      .catch(err => {
+        document.getElementById('customer-data-output').innerHTML = `<p>Error: ${err}</p>`;
+      });
     }
   </script>
 </body>
