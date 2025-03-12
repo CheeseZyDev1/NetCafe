@@ -30,7 +30,7 @@ const {
 
 // ประกาศ app
 const app = express();
-const port = process.env.PORT || 8000;
+const port = process.env.PORT 
 
 // ใช้งาน Middleware
 app.use(cors());
