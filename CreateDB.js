@@ -1,11 +1,17 @@
 // CreateDB.js
+require('dotenv').config(); // อ่านค่า .env
 const { Sequelize, DataTypes } = require('sequelize');
 const path = require('path');
 
-// ตั้งค่าการเชื่อมต่อ SQLite
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: path.join(__dirname, 'netcafe-db.sqlite'),
+// ตั้งค่าการเชื่อมต่อ PostgreSQL สำหรับ Railway โดยใช้ DATABASE_URL จาก .env
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
+  dialect: 'postgres',
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false, // รองรับ Railway
+    },
+  },
   logging: false,
 });
 
@@ -66,13 +72,31 @@ const OrderItem = sequelize.define('OrderItem', {
 // Products (เมนูอาหาร)
 const Product = sequelize.define('Product', {
   name: { type: DataTypes.STRING, allowNull: false },
-  price: { type: DataTypes.FLOAT, allowNull: false },  // ราคา > 0
+  price: { type: DataTypes.FLOAT, allowNull: false },  // ราคาต้อง > 0
   category: { type: DataTypes.STRING, allowNull: false },
   stock: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 }
 }, { timestamps: true });
 
+// Coupons (ตัวอย่าง Model คูปอง)
+const Coupon = sequelize.define('Coupon', {
+  code: { type: DataTypes.STRING, allowNull: false, unique: true },
+  discount: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
+}, { timestamps: true });
+
+// Reports (ตัวอย่าง Model รายงาน)
+const Report = sequelize.define('Report', {
+  title: { type: DataTypes.STRING, allowNull: false },
+  detail: { type: DataTypes.TEXT, allowNull: true },
+}, { timestamps: true });
+
+// Notifications (ตัวอย่าง Model การแจ้งเตือน)
+const Notification = sequelize.define('Notification', {
+  message: { type: DataTypes.STRING, allowNull: false },
+  read: { type: DataTypes.BOOLEAN, defaultValue: false },
+}, { timestamps: true });
+
 // Reservations (การจองเครื่องคอมพิวเตอร์)
-// ลบฟิลด์ deadline ออก
+// ฟิลด์ deadline ถูกลบออก
 const Reservation = sequelize.define('Reservation', {
   reservation_time: { 
     type: DataTypes.DATE, 
@@ -101,7 +125,6 @@ const Reservation = sequelize.define('Reservation', {
   },
   start_time: { type: DataTypes.DATE, allowNull: true },
   end_time: { type: DataTypes.DATE, allowNull: true },
-  // deadline: { type: DataTypes.BIGINT, allowNull: true },  // ถูกลบออก
   price_per_hour: { 
     type: DataTypes.FLOAT, 
     allowNull: false, 
@@ -146,22 +169,20 @@ Computer.hasMany(Reservation, { foreignKey: 'computer_id', onDelete: 'CASCADE' }
 Reservation.belongsTo(Computer, { foreignKey: 'computer_id', onDelete: 'CASCADE' });
 
 // ----------------------
-// Sync & Connect
+// Sync & Connect (ใช้ force: true เพื่อรีเซ็ตตารางทั้งหมด)
 // ----------------------
 const connectDB = async () => {
   try {
     await sequelize.authenticate();
-    console.log('✅ Connected to SQLite database!');
+    console.log('✅ Connected to PostgreSQL database!');
   } catch (error) {
-    console.error('❌ Database connection failed:', error);
+    console.error('❌ PostgreSQL Connection Error:', error);
   }
 };
 
 const initDB = async () => {
   try {
-    console.log("📌 Syncing database...");
-    // ใช้ force: true เพื่อรีเซ็ตตารางทั้งหมด
-    // แล้วสร้างใหม่ตาม Model (deadline ถูกลบ)
+    console.log("📌 Syncing database with force: true (all tables will be dropped and recreated)...");
     await sequelize.sync({ force: true });
     console.log('✅ Database & tables synchronized with force!');
   } catch (error) {
