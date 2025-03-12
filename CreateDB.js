@@ -20,7 +20,7 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
 // ----------------------
 
 // Users (ลูกค้าและสมาชิก VIP)
-const User = sequelize.define('User', {
+const User = sequelize.define('user', {
   username: { type: DataTypes.STRING, allowNull: false, unique: true },
   password: { type: DataTypes.STRING, allowNull: false },
   email:    { type: DataTypes.STRING, allowNull: false, unique: true },
@@ -30,7 +30,7 @@ const User = sequelize.define('User', {
 }, { timestamps: true, freezeTableName: true });
 
 // Computers (เครื่องคอมพิวเตอร์)
-const Computer = sequelize.define('Computer', {
+const Computer = sequelize.define('computer', {
   name: { type: DataTypes.STRING, allowNull: false, unique: true },
   status: { type: DataTypes.STRING, defaultValue: 'Available', allowNull: false },
   last_used: { type: DataTypes.DATE, allowNull: true },
@@ -38,7 +38,7 @@ const Computer = sequelize.define('Computer', {
 }, { timestamps: true });
 
 // Sessions (การใช้งานคอมพิวเตอร์)
-const Session = sequelize.define('Session', {
+const Session = sequelize.define('session', {
   start_time: { 
     type: DataTypes.DATE, 
     allowNull: false, 
@@ -53,24 +53,24 @@ const Session = sequelize.define('Session', {
 }, { timestamps: true });
 
 // Payments (การชำระเงิน)
-const Payment = sequelize.define('Payment', {
+const Payment = sequelize.define('payment', {
   amount: { type: DataTypes.FLOAT, allowNull: false },
   payment_method: { type: DataTypes.STRING, allowNull: false },
 }, { timestamps: true });
 
 // Orders (พรีออเดอร์อาหาร)
-const Order = sequelize.define('Order', {
+const Order = sequelize.define('order', {
   total_price: { type: DataTypes.FLOAT, allowNull: false },
   status: { type: DataTypes.STRING, defaultValue: 'Pending', allowNull: false },
 }, { timestamps: true });
 
 // OrderItems (รายการอาหาร)
-const OrderItem = sequelize.define('OrderItem', {
+const OrderItem = sequelize.define('orderItem', {
   quantity: { type: DataTypes.INTEGER, allowNull: false },
 }, { timestamps: true });
 
 // Products (เมนูอาหาร) – ราคาต้อง > 0 และ stock
-const Product = sequelize.define('Product', {
+const Product = sequelize.define('product', {
   name: { type: DataTypes.STRING, allowNull: false },
   price: { type: DataTypes.FLOAT, allowNull: false },
   category: { type: DataTypes.STRING, allowNull: false },
@@ -78,26 +78,26 @@ const Product = sequelize.define('Product', {
 }, { timestamps: true });
 
 // Coupons (ตัวอย่าง Model คูปอง)
-const Coupon = sequelize.define('Coupon', {
+const Coupon = sequelize.define('coupon', {
   code: { type: DataTypes.STRING, allowNull: false, unique: true },
   discount: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
 }, { timestamps: true });
 
 // Reports (ตัวอย่าง Model รายงาน)
-const Report = sequelize.define('Report', {
+const Report = sequelize.define('report', {
   title: { type: DataTypes.STRING, allowNull: false },
   detail: { type: DataTypes.TEXT, allowNull: true },
 }, { timestamps: true });
 
 // Notifications (ตัวอย่าง Model การแจ้งเตือน)
-const Notification = sequelize.define('Notification', {
+const Notification = sequelize.define('notification', {
   message: { type: DataTypes.STRING, allowNull: false },
   read: { type: DataTypes.BOOLEAN, defaultValue: false },
 }, { timestamps: true });
 
 // Reservations (การจองเครื่องคอมพิวเตอร์)
 // ฟิลด์ deadline ถูกลบออก
-const Reservation = sequelize.define('Reservation', {
+const Reservation = sequelize.define('reservation', {
   reservation_time: { 
     type: DataTypes.DATE, 
     allowNull: false, 
