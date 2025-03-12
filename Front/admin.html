@@ -20,7 +20,6 @@
     button {
       cursor: pointer;
     }
-
     /* Header */
     .header {
       background: linear-gradient(135deg, #007bff, #00a1ff);
@@ -38,7 +37,6 @@
       margin: 0;
       font-size: 24px;
     }
-
     /* Sidebar */
     .sidebar {
       width: 240px;
@@ -67,7 +65,7 @@
     .sidebar a:hover {
       background: #6c757d;
     }
-    /* Logout Link (สีแดง) และ Custom Data */
+    /* Logout Link (สีแดง) */
     .sidebar .logout-link {
       background: #dc3545 !important;
       text-align: center;
@@ -167,25 +165,25 @@
   </style>
 </head>
 <body>
-  <!-- Header -->
   <div class="header">
     <h1>Admin Dashboard</h1>
   </div>
   
-  <!-- Sidebar -->
   <div class="sidebar">
     <h3>Manage</h3>
     <a href="#" onclick="loadSection('users')">Users</a>
     <a href="#" onclick="loadSection('computers')">Computers</a>
     <a href="#" onclick="loadSection('sessions')">Sessions</a>
     <a href="#" onclick="loadSection('orders')">Orders</a>
-    <a href="#" onclick="loadSection('products')">Products</a>
-    <a href="#" onclick="loadSection('reservations')">Reservations</a>
+    <!-- เปลี่ยน Products => Snack and Drink -->
+    <a href="#" onclick="loadSection('products')">Snack and Drink</a>
+    <!-- เปลี่ยน Reservations => Computer -->
+    <a href="#" onclick="loadSection('reservations')">Computer</a>
+
     <a href="#" onclick="loadCustomerData()">Customer Data</a>
     <a href="#" class="logout-link" onclick="logout()">Logout</a>
   </div>
   
-  <!-- Content Area -->
   <div class="content">
     <h2 id="section-title">Welcome to Admin Dashboard</h2>
     <div id="section-content">
@@ -205,7 +203,9 @@
   
   <script>
     const baseURL = 'http://localhost:8000';
-
+    // โมเดลที่ต้องใช้ admin endpoint
+    const adminModels = ['users','computers','sessions','orders','orderitems','products','reservations'];
+    
     // ตรวจสอบ admin จาก localStorage
     const adminData = JSON.parse(localStorage.getItem('admin'));
     if (!adminData) {
@@ -217,26 +217,22 @@
       window.location.href = 'login.html';
     }
 
-    // Mapping ของฟิลด์สำหรับแต่ละโมเดล
+    // ฟิลด์สำหรับฟอร์ม CRUD ตามโมเดล
     const formFields = {
       users: ["username", "password", "email", "phone_number", "is_admin", "is_vip"],
       computers: ["name", "status", "last_used"],
       sessions: ["start_time", "end_time", "total_price", "user_id", "computer_id"],
       orders: ["total_price", "status", "user_id"],
-      products: ["name", "price", "category"],
+      // Snack and Drink => products
+      products: ["name", "price", "category", "stock"],
+      // Computer => reservations
       reservations: ["reservation_time", "status", "hours", "total_price", "user_id", "computer_id"]
     };
 
-    function loadSection(model) {
-      // ซ่อนส่วน Customer Data เมื่อเลือกโมเดลอื่น
-      document.getElementById('customer-content').classList.add('hidden');
-      document.getElementById('section-content').classList.remove('hidden');
-      document.getElementById('section-title').textContent = model.charAt(0).toUpperCase() + model.slice(1);
-      fetchData(model);
-    }
-
+    // ดึงข้อมูลโดยใช้ admin endpoint ถ้าโมเดลอยู่ใน adminModels
     function fetchData(model) {
-      fetch(`${baseURL}/${model}`, {
+      let url = baseURL + '/' + (adminModels.includes(model) ? 'admin/' : '') + model;
+      fetch(url, {
         headers: { 'x-admin-password': 'secret-admin-password' }
       })
       .then(response => response.json())
@@ -246,6 +242,15 @@
       .catch(err => {
         document.getElementById('section-content').innerHTML = `<p>Error loading data: ${err}</p>`;
       });
+    }
+
+    function loadSection(model) {
+      // ซ่อน Customer Data เมื่อเลือกโมเดลอื่น
+      document.getElementById('customer-content').classList.add('hidden');
+      document.getElementById('section-content').classList.remove('hidden');
+      // เปลี่ยนหัวข้อ
+      document.getElementById('section-title').textContent = model.charAt(0).toUpperCase() + model.slice(1);
+      fetchData(model);
     }
 
     function renderTable(model, data) {
@@ -260,7 +265,12 @@
         data.forEach(item => {
           html += `<tr>`;
           Object.keys(item).forEach(key => {
-            html += `<td>${item[key]}</td>`;
+            let cellValue = item[key];
+            // ถ้าเป็น object หรือ array ให้ JSON.stringify
+            if (typeof cellValue === 'object' && cellValue !== null) {
+              cellValue = JSON.stringify(cellValue);
+            }
+            html += `<td>${cellValue}</td>`;
           });
           html += `<td>
             <button class="btn edit" onclick='showForm("${model}", "edit", ${JSON.stringify(item)})'>Edit</button>
@@ -280,6 +290,7 @@
       const fields = formFields[model] || [];
       let formHtml = `<h3>${action === 'add' ? 'Add New' : 'Edit'} ${model.charAt(0).toUpperCase() + model.slice(1)}</h3>`;
       fields.forEach(field => {
+        // ในกรณี add ถ้า field เป็น id ให้ข้าม
         if (action === 'add' && field === 'id') return;
         const value = record[field] || '';
         formHtml += `<label>${field}:</label>
@@ -295,6 +306,7 @@
       document.getElementById('form-container').classList.add('hidden');
     }
 
+    // ใช้ admin endpoint สำหรับการเพิ่ม/แก้ไข
     function submitForm(model, action, id) {
       let payload = {};
       const inputs = document.querySelectorAll('#form-container input');
@@ -302,44 +314,31 @@
         const field = input.id.replace('form-', '');
         payload[field] = input.value;
       });
-      if (action === 'add') {
-        fetch(`${baseURL}/${model}`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'x-admin-password': 'secret-admin-password'
-          },
-          body: JSON.stringify(payload)
-        })
-        .then(response => response.json())
-        .then(data => {
-          alert(`${model} added successfully!`);
-          hideForm();
-          fetchData(model);
-        })
-        .catch(err => alert('Error adding record: ' + err));
-      } else if (action === 'edit') {
-        fetch(`${baseURL}/${model}/${id}`, {
-          method: 'PUT',
-          headers: { 
-            'Content-Type': 'application/json',
-            'x-admin-password': 'secret-admin-password'
-          },
-          body: JSON.stringify(payload)
-        })
-        .then(response => response.json())
-        .then(data => {
-          alert(`${model} updated successfully!`);
-          hideForm();
-          fetchData(model);
-        })
-        .catch(err => alert('Error updating record: ' + err));
+      let url = baseURL + '/' + (adminModels.includes(model) ? 'admin/' : '') + model;
+      if (action === 'edit') {
+        url += '/' + id;
       }
+      fetch(url, {
+        method: action === 'add' ? 'POST' : 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-password': 'secret-admin-password'
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(response => response.json())
+      .then(data => {
+        alert(`${model} ${action === 'add' ? 'added' : 'updated'} successfully!`);
+        hideForm();
+        fetchData(model);
+      })
+      .catch(err => alert('Error ' + action + ' record: ' + err));
     }
 
     function deleteRecord(model, id) {
+      let url = baseURL + '/' + (adminModels.includes(model) ? 'admin/' : '') + model + '/' + id;
       if (confirm("Are you sure you want to delete this record?")) {
-        fetch(`${baseURL}/${model}/${id}`, {
+        fetch(url, {
           method: 'DELETE',
           headers: {
             'x-admin-password': 'secret-admin-password'
@@ -369,7 +368,7 @@
         alert("Please enter a Customer ID");
         return;
       }
-      fetch(`${baseURL}/users/${customerId}`, {
+      fetch(`${baseURL}/admin/users/${customerId}`, {
         headers: { 'x-admin-password': 'secret-admin-password' }
       })
       .then(response => response.json())
@@ -389,7 +388,7 @@
     }
 
     function editCustomerProfile(customerId) {
-      fetch(`${baseURL}/users/${customerId}`, {
+      fetch(`${baseURL}/admin/users/${customerId}`, {
         headers: { 'x-admin-password': 'secret-admin-password' }
       })
       .then(response => response.json())
@@ -425,7 +424,7 @@
         is_admin: document.getElementById('edit-is_admin').value,
         is_vip: document.getElementById('edit-is_vip').value
       };
-      fetch(`${baseURL}/users/${customerId}`, {
+      fetch(`${baseURL}/admin/users/${customerId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -449,7 +448,7 @@
         alert("Please enter a Customer ID");
         return;
       }
-      fetch(`${baseURL}/sessions?user_id=${customerId}`, {
+      fetch(`${baseURL}/admin/sessions?user_id=${customerId}`, {
         headers: { 'x-admin-password': 'secret-admin-password' }
       })
       .then(response => response.json())
@@ -475,7 +474,7 @@
         alert("Please enter a Customer ID");
         return;
       }
-      fetch(`${baseURL}/orders?user_id=${customerId}`, {
+      fetch(`${baseURL}/admin/orders?user_id=${customerId}`, {
         headers: { 'x-admin-password': 'secret-admin-password' }
       })
       .then(response => response.json())

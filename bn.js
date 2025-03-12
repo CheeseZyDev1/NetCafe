@@ -1,11 +1,6 @@
 // backend.js
 const express = require('express');
 const cors = require('cors');
-const axios = require('axios');
-const bodyParser = require('body-parser');
-const path = require('path');
-const sequelize = require('sequelize');
-const app = express();
 const {
   sequelize,
   User,
@@ -21,16 +16,14 @@ const {
   Reservation,
 } = require('./CreateDB');
 
-
-//const port = process.env.PORT || 8000;
-const dbUrl = 'postgres://webadmin:XYIcvc98762@node71725-noderest-67.proen.app.ruk-com.cloud:11749/login';
-const sequelize = new Sequelize(dbUrl);
+const app = express();
+const port = process.env.PORT || 8000;
 
 // Middleware สำหรับแปลงข้อมูล JSON และเปิดใช้งาน CORS
 app.use(cors());
 app.use(express.json());
 
-// Middleware สำหรับตรวจสอบสิทธิ์แอดมิน (ตรวจ header x-admin-password)
+// Middleware สำหรับตรวจสอบสิทธิ์แอดมิน
 const adminAuth = (req, res, next) => {
   const adminPassword = req.headers['x-admin-password'];
   if (adminPassword && adminPassword === 'secret-admin-password') {
@@ -80,10 +73,12 @@ app.post('/users', async (req, res) => {
    Public Endpoints (สำหรับผู้ใช้ทั่วไป)
 ================================ */
 
-// Users CRUD
+// Users
 app.get('/users', async (req, res) => {
   try {
-    const users = await User.findAll({ include: [Session, Payment, Order, Notification] });
+    const users = await User.findAll({
+      include: [Session, Payment, Order, Notification],
+    });
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -91,7 +86,9 @@ app.get('/users', async (req, res) => {
 });
 app.get('/users/:id', async (req, res) => {
   try {
-    const user = await User.findByPk(req.params.id, { include: [Session, Payment, Order, Notification] });
+    const user = await User.findByPk(req.params.id, {
+      include: [Session, Payment, Order, Notification],
+    });
     if (user) res.json(user);
     else res.status(404).json({ error: 'User not found' });
   } catch (error) {
@@ -121,7 +118,7 @@ app.delete('/users/:id', async (req, res) => {
   }
 });
 
-// Computers CRUD
+// Computers
 app.get('/computers', async (req, res) => {
   try {
     const computers = await Computer.findAll();
@@ -170,7 +167,7 @@ app.delete('/computers/:id', async (req, res) => {
   }
 });
 
-// Sessions CRUD
+// Sessions
 app.get('/sessions', async (req, res) => {
   try {
     const sessions = await Session.findAll();
@@ -219,7 +216,7 @@ app.delete('/sessions/:id', async (req, res) => {
   }
 });
 
-// Payments CRUD
+// Payments
 app.get('/payments', async (req, res) => {
   try {
     const payments = await Payment.findAll();
@@ -268,7 +265,7 @@ app.delete('/payments/:id', async (req, res) => {
   }
 });
 
-// Orders CRUD
+// Orders
 app.get('/orders', async (req, res) => {
   try {
     const orders = await Order.findAll({ include: [OrderItem] });
@@ -317,7 +314,7 @@ app.delete('/orders/:id', async (req, res) => {
   }
 });
 
-// OrderItems CRUD
+// OrderItems
 app.get('/orderitems', async (req, res) => {
   try {
     const orderItems = await OrderItem.findAll();
@@ -366,7 +363,7 @@ app.delete('/orderitems/:id', async (req, res) => {
   }
 });
 
-// Products CRUD
+// Products
 app.get('/products', async (req, res) => {
   try {
     const products = await Product.findAll();
@@ -415,7 +412,7 @@ app.delete('/products/:id', async (req, res) => {
   }
 });
 
-// Coupons CRUD
+// Coupons
 app.get('/coupons', async (req, res) => {
   try {
     const coupons = await Coupon.findAll();
@@ -464,7 +461,7 @@ app.delete('/coupons/:id', async (req, res) => {
   }
 });
 
-// Reports CRUD
+// Reports
 app.get('/reports', async (req, res) => {
   try {
     const reports = await Report.findAll();
@@ -513,7 +510,7 @@ app.delete('/reports/:id', async (req, res) => {
   }
 });
 
-// Notifications CRUD
+// Notifications
 app.get('/notifications', async (req, res) => {
   try {
     const notifications = await Notification.findAll();
@@ -562,7 +559,7 @@ app.delete('/notifications/:id', async (req, res) => {
   }
 });
 
-// Reservations CRUD
+// Reservations
 app.post('/reservations', async (req, res) => {
   try {
     const newReservation = await Reservation.create(req.body);
@@ -573,7 +570,9 @@ app.post('/reservations', async (req, res) => {
 });
 app.get('/reservations', async (req, res) => {
   try {
-    const reservations = await Reservation.findAll({ include: [User, Computer] });
+    const reservations = await Reservation.findAll({
+      include: [User, Computer],
+    });
     res.json(reservations);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -581,7 +580,9 @@ app.get('/reservations', async (req, res) => {
 });
 app.get('/reservations/:id', async (req, res) => {
   try {
-    const reservation = await Reservation.findByPk(req.params.id, { include: [User, Computer] });
+    const reservation = await Reservation.findByPk(req.params.id, {
+      include: [User, Computer],
+    });
     if (reservation) res.json(reservation);
     else res.status(404).json({ error: 'Reservation not found' });
   } catch (error) {
@@ -618,12 +619,16 @@ app.delete('/reservations/:id', async (req, res) => {
 // Admin - Users
 app.get('/admin/users', adminAuth, async (req, res) => {
   try {
-    const users = await User.findAll({ include: [Session, Payment, Order, Notification] });
+    const users = await User.findAll({
+      // ถ้าไม่ได้ใช้ Notification ให้เอาออก
+      include: [Session, Payment, Order],
+    });
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
 app.put('/admin/users/:id', adminAuth, async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);
@@ -1098,12 +1103,14 @@ async function createAdminUser() {
   }
 }
 
+
+
 /* ================================
    เริ่มต้นเซิร์ฟเวอร์หลังจากซิงค์ฐานข้อมูล
 ================================ */
 sequelize.sync({ force: true })
   .then(() => {
-    console.log('Database & tables synchronized!');
+    console.log('Database & tables synchronized with force!');
     createAdminUser();
     app.listen(port, () => {
       console.log(`🚀 Server is running on port ${port}`);
