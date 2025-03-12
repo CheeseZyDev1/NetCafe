@@ -27,7 +27,7 @@ const User = sequelize.define('user', {
   phone_number: { type: DataTypes.STRING, allowNull: true },
   is_vip:   { type: DataTypes.BOOLEAN, defaultValue: false },
   is_admin: { type: DataTypes.BOOLEAN, defaultValue: false },
-}, { timestamps: true, freezeTableName: true });
+}, { timestamps: true, tableName: 'users' });
 
 // Computers (เครื่องคอมพิวเตอร์)
 const Computer = sequelize.define('computer', {
