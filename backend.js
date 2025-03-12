@@ -1,7 +1,9 @@
 // backend.js
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { Sequelize } = require('sequelize'); // เพิ่ม Sequelize ที่นี่
+const { Sequelize } = require('sequelize');
+const path = require('path');
 
 // เชื่อมต่อ PostgreSQL บน Railway
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
@@ -14,7 +16,7 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
   },
 });
 
-// Import Models จาก CreateDB และส่ง sequelize เข้าไป
+// Import Models จาก CreateDB
 const {
   User,
   Computer,
@@ -24,16 +26,18 @@ const {
   OrderItem,
   Product,
   Reservation,
-} = require('./CreateDB'); // ✅ ใช้ sequelize ที่ประกาศไว้ด้านบน
+} = require('./CreateDB'); 
 
+// ประกาศ app
 const app = express();
-const port = process.env.PORT 
+const port = process.env.PORT || 8000;
 
-// Middleware
+// ใช้งาน Middleware
 app.use(cors());
 app.use(express.json());
 
-
+// ให้ไฟล์ static ในโฟลเดอร์ public
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Middleware สำหรับตรวจสอบสิทธิ์แอดมิน
 const adminAuth = (req, res, next) => {
@@ -46,13 +50,17 @@ const adminAuth = (req, res, next) => {
 };
 
 /* ================================
-   Authentication Endpoints (สำหรับผู้ใช้ทั่วไป)
+   ตัวอย่าง Endpoint
 ================================ */
 
-// Endpoint สำหรับ test
-
+// ตัวอย่าง root path => ส่งไฟล์ home.html
 app.get('/', (req, res) => {
-  res.send('Welcome to NetCafe API!');
+  res.sendFile(path.join(__dirname, 'public', 'home.html'));
+});
+
+// ตัวอย่าง Endpoint ทั่วไป
+app.get('/test', (req, res) => {
+  res.json({ message: 'Test endpoint works!' });
 });
 
 // Endpoint สำหรับ Login
@@ -1144,21 +1152,22 @@ async function createAdminUser() {
    เริ่มต้นเซิร์ฟเวอร์หลังจากซิงค์ฐานข้อมูล
 ================================ */
 // ตรวจสอบการเชื่อมต่อฐานข้อมูล
+// ตรวจสอบการเชื่อมต่อ DB และ sync
 sequelize
   .authenticate()
-  .then(() => console.log('✅ PostgreSQL Connected Successfully!'))
-  .catch((err) => console.error('❌ PostgreSQL Connection Error:', err));
-
-// ซิงค์ฐานข้อมูล
-sequelize
-  .sync({ alter: true })
+  .then(() => {
+    console.log('✅ PostgreSQL Connected Successfully!');
+    // sync({ alter: true }) หรือ { force: true } ถ้าต้องการลบข้อมูลเก่า
+    return sequelize.sync({ alter: true });
+  })
   .then(() => {
     console.log('✅ Database synchronized successfully!');
+    // เริ่มต้นเซิร์ฟเวอร์
     app.listen(port, () => {
       console.log(`🚀 Server is running on port ${port}`);
     });
   })
-  .catch((err) => console.error('❌ Error syncing database:', err));
+  .catch((err) => console.error('❌ Error syncing DB or starting server:', err));
 
 module.exports = {
   sequelize,
