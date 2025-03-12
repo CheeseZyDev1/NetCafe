@@ -2,7 +2,9 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>User Home</title>
+  <title>User Home (Rainbow + Emoji + Logout)</title>
+  <!-- สามารถเพิ่ม icon font หรืออื่น ๆ ได้ตามต้องการ -->
+
   <style>
     body {
       margin: 0;
@@ -10,20 +12,83 @@
       font-family: Arial, sans-serif;
       background: #f5f5f5;
     }
+    /* แถบโปรโมชั่น */
     .promo-bar {
       background: linear-gradient(45deg, #ff8a00, #ff3d00);
       color: #fff;
       text-align: center;
       padding: 10px;
       font-weight: bold;
+      font-size: 16px;
     }
+
+    /* ปุ่ม Logout มุมบนขวา */
+    .logout-btn {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #dc3545;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      animation: blink 2s infinite; /* ทำให้ปุ่มกะพริบสี */
+    }
+    @keyframes blink {
+      0%, 100% {
+        background-color: #dc3545;
+      }
+      50% {
+        background-color: #ff6b6b;
+      }
+    }
+
+    /* ส่วนต้อนรับ */
     .welcome-section {
       text-align: center;
-      margin: 20px 0;
+      margin: 30px 0 20px 0;
       font-size: 24px;
-      color: green;
       font-weight: bold;
     }
+    /* ข้อความสีรุ้งกระพริบเลื่อนไปมา */
+    .rainbow-text {
+      display: inline-block;
+      background: linear-gradient(
+        90deg,
+        red, orange, yellow, green, cyan, blue, violet, red
+      );
+      background-size: 400% 100%;
+      color: transparent;
+      -webkit-background-clip: text;
+      animation: rainbow 4s linear infinite;
+    }
+    @keyframes rainbow {
+      0% {
+        background-position: 0% 50%;
+      }
+      100% {
+        background-position: 100% 50%;
+      }
+    }
+
+    /* อีโมจิขยับดุ๊กดิ๊ก */
+    .emoji-bounce {
+      display: inline-block;
+      animation: bounce 1.5s infinite alternate ease-in-out;
+      margin-left: 8px;
+    }
+    @keyframes bounce {
+      from {
+        transform: translateY(0);
+      }
+      to {
+        transform: translateY(-8px);
+      }
+    }
+
+    /* กล่องเมนูอีโมจิ */
     .menu-container {
       display: flex;
       justify-content: center;
@@ -37,12 +102,10 @@
       width: 100px;
       cursor: pointer;
     }
-    .menu-item img {
-      width: 60px;
-      height: 60px;
-      object-fit: contain;
+    .emoji-icon {
+      font-size: 40px;
+      margin-bottom: 8px;
       display: block;
-      margin: 0 auto 8px;
     }
     .menu-item span {
       display: block;
@@ -56,59 +119,78 @@
   <div class="promo-bar">
     โปรโมชั่น: ยิ่งจองชั่วโมงเยอะ ยิ่งลดสูงสุด 45%!!
   </div>
+
+  <!-- ปุ่ม Logout มุมบนขวา -->
+  <button class="logout-btn" onclick="logout()">Logout</button>
   
   <!-- ส่วนต้อนรับ -->
   <div class="welcome-section" id="welcome-text">
-    Welcome, user2!
+    <!-- ตัวอย่าง: Welcome, <span class="rainbow-text">user2</span>! <span class="emoji-bounce">🤩</span> -->
+    <!-- (เราจะกำหนดค่าใน script ด้านล่าง) -->
   </div>
   
-  <!-- เมนูไอคอน -->
+  <!-- เมนูอีโมจิ -->
   <div class="menu-container">
-    <!-- เปลี่ยน Reservation => Computer -->
+    <!-- เปลี่ยน Reservation => Computer (🖥️) -->
     <div class="menu-item" onclick="goToComputer()">
-      <img src="icons/reservation.png" alt="Computer Icon">
+      <div class="emoji-icon">🖥️</div>
       <span>Computer</span>
     </div>
-    <!-- เปลี่ยน Order Products => Snack and Drink -->
+
+    <!-- เปลี่ยน Order Products => Snack and Drink (🍔) -->
     <div class="menu-item" onclick="goToSnackAndDrink()">
-      <img src="icons/order_products.png" alt="Snack and Drink Icon">
+      <div class="emoji-icon">🍔</div>
       <span>Snack and Drink</span>
     </div>
+
     <div class="menu-item" onclick="goToCart()">
-      <img src="icons/cart.png" alt="Cart Icon">
+      <div class="emoji-icon">🛒</div>
       <span>Cart</span>
     </div>
+
     <div class="menu-item" onclick="goToSessions()">
-      <img src="icons/sessions.png" alt="Sessions Icon">
+      <div class="emoji-icon">⏳</div>
       <span>Sessions</span>
     </div>
+
     <div class="menu-item" onclick="goToProfile()">
-      <img src="icons/profile.png" alt="Profile Icon">
+      <div class="emoji-icon">🙍</div>
       <span>Profile</span>
     </div>
+
     <div class="menu-item" onclick="goToOrderHistory()">
-      <img src="icons/order_history.png" alt="Order History Icon">
+      <div class="emoji-icon">📜</div>
       <span>Order History</span>
     </div>
   </div>
   
   <script>
-    // สมมติว่ามีข้อมูล user ใน localStorage
+    // ตรวจสอบ user ใน localStorage
     const userData = JSON.parse(localStorage.getItem('user'));
     if (!userData) {
       // ถ้าไม่มี user ใน localStorage ให้เด้งไป login
       window.location.href = 'login.html';
     } else {
-      // เปลี่ยนข้อความ Welcome เป็นชื่อ user
-      document.getElementById('welcome-text').textContent = `Welcome, ${userData.username}!`;
+      // สร้างข้อความ Welcome เป็นชื่อ user แบบสีรุ้ง + อีโมจิขยับ
+      // ตัวอย่าง: Welcome, <span class="rainbow-text">user2</span>! <span class="emoji-bounce">🤩</span>
+      document.getElementById('welcome-text').innerHTML = `
+        Welcome, <span class="rainbow-text">${userData.username}</span>! 
+        <span class="emoji-bounce">🤩</span>
+      `;
     }
     
+    // ฟังก์ชัน Logout
+    function logout() {
+      localStorage.removeItem('user');
+      window.location.href = 'login.html';
+    }
+
     // ฟังก์ชันตัวอย่างสำหรับแต่ละปุ่ม (คุณสามารถปรับให้ไปหน้าอื่นหรือเรียก API ตามจริง)
     function goToComputer() {
-      window.location.href = 'computer.html'; // หรือเรียก fetch API reservation
+      window.location.href = 'computer.html'; 
     }
     function goToSnackAndDrink() {
-      window.location.href = 'snack_drink.html'; // หรือ fetch products
+      window.location.href = 'snack_drink.html'; 
     }
     function goToCart() {
       window.location.href = 'cart.html';

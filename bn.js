@@ -41,10 +41,8 @@ const adminAuth = (req, res, next) => {
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
   try {
-    // ค้นหาผู้ใช้ที่มี username และ password ตรงกัน
     const user = await User.findOne({ where: { username, password } });
     if (user) {
-      // ส่งข้อมูลที่จำเป็นกลับไป รวมถึง is_admin
       res.json({
         id: user.id,
         username: user.username,
@@ -77,7 +75,8 @@ app.post('/users', async (req, res) => {
 app.get('/users', async (req, res) => {
   try {
     const users = await User.findAll({
-      include: [Session, Payment, Order, Notification],
+      // หาก Notification ไม่ได้ใช้งาน ให้คอมเมนต์ออก
+      include: [Session, Payment, Order],
     });
     res.json(users);
   } catch (error) {
@@ -86,10 +85,10 @@ app.get('/users', async (req, res) => {
 });
 app.get('/users/:id', async (req, res) => {
   try {
-    const user = await User.findByPk(req.params.id, {
-      include: [Session, Payment, Order, Notification],
+    const userData = await User.findByPk(req.params.id, {
+      include: [Session, Payment, Order],
     });
-    if (user) res.json(user);
+    if (userData) res.json(userData);
     else res.status(404).json({ error: 'User not found' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -97,10 +96,10 @@ app.get('/users/:id', async (req, res) => {
 });
 app.put('/users/:id', async (req, res) => {
   try {
-    const user = await User.findByPk(req.params.id);
-    if (user) {
-      await user.update(req.body);
-      res.json(user);
+    const userData = await User.findByPk(req.params.id);
+    if (userData) {
+      await userData.update(req.body);
+      res.json(userData);
     } else res.status(404).json({ error: 'User not found' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -108,9 +107,9 @@ app.put('/users/:id', async (req, res) => {
 });
 app.delete('/users/:id', async (req, res) => {
   try {
-    const user = await User.findByPk(req.params.id);
-    if (user) {
-      await user.destroy();
+    const userData = await User.findByPk(req.params.id);
+    if (userData) {
+      await userData.destroy();
       res.json({ message: 'User deleted successfully' });
     } else res.status(404).json({ error: 'User not found' });
   } catch (error) {
@@ -276,7 +275,12 @@ app.get('/orders', async (req, res) => {
 });
 app.get('/orders/:id', async (req, res) => {
   try {
-    const order = await Order.findByPk(req.params.id, { include: [OrderItem] });
+    const order = await Order.findByPk(req.params.id, {
+      include: [{
+        model: OrderItem,
+        include: [Product]  // Include Product to get product name and price
+      }]
+    });
     if (order) res.json(order);
     else res.status(404).json({ error: 'Order not found' });
   } catch (error) {
@@ -291,13 +295,16 @@ app.post('/orders', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-app.put('/orders/:id', async (req, res) => {
+// Endpoint สำหรับชำระเงิน อัปเดตสถานะออเดอร์เป็น "Paid"
+app.put('/orders/:id/pay', async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id);
-    if (order) {
-      await order.update(req.body);
-      res.json(order);
-    } else res.status(404).json({ error: 'Order not found' });
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    order.status = 'Paid'; // หรือ 'Completed'
+    await order.save();
+    res.json(order);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -620,7 +627,6 @@ app.delete('/reservations/:id', async (req, res) => {
 app.get('/admin/users', adminAuth, async (req, res) => {
   try {
     const users = await User.findAll({
-      // ถ้าไม่ได้ใช้ Notification ให้เอาออก
       include: [Session, Payment, Order],
     });
     res.json(users);
@@ -628,13 +634,12 @@ app.get('/admin/users', adminAuth, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
 app.put('/admin/users/:id', adminAuth, async (req, res) => {
   try {
-    const user = await User.findByPk(req.params.id);
-    if (user) {
-      await user.update(req.body);
-      res.json(user);
+    const userData = await User.findByPk(req.params.id);
+    if (userData) {
+      await userData.update(req.body);
+      res.json(userData);
     } else res.status(404).json({ error: 'User not found' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -642,9 +647,9 @@ app.put('/admin/users/:id', adminAuth, async (req, res) => {
 });
 app.delete('/admin/users/:id', adminAuth, async (req, res) => {
   try {
-    const user = await User.findByPk(req.params.id);
-    if (user) {
-      await user.destroy();
+    const userData = await User.findByPk(req.params.id);
+    if (userData) {
+      await userData.destroy();
       res.json({ message: 'User deleted successfully' });
     } else res.status(404).json({ error: 'User not found' });
   } catch (error) {
@@ -1102,8 +1107,6 @@ async function createAdminUser() {
     console.error('Error creating admin user:', error);
   }
 }
-
-
 
 /* ================================
    เริ่มต้นเซิร์ฟเวอร์หลังจากซิงค์ฐานข้อมูล

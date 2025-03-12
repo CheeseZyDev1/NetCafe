@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>Computer Reservation</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      background: #f5f5f5; 
+      padding: 20px; 
+    }
+    .container { 
+      max-width: 900px; 
+      margin: 20px auto; 
+      background: #fff; 
+      border-radius: 8px; 
+      padding: 20px; 
+      box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+    }
+    h2 { text-align: center; }
+    .nav { text-align: center; margin-bottom: 20px; }
+    .nav a { 
+      margin: 0 5px; 
+      padding: 8px 16px; 
+      background: #007bff; 
+      color: #fff; 
+      text-decoration: none; 
+      border-radius: 4px; 
+    }
+    .nav a:hover { background: #0056b3; }
+    .toggle-container { 
+      text-align: center; 
+      margin-bottom: 20px; 
+    }
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 20px; 
+      background: #fff; 
+      border-radius: 4px; 
+      overflow: hidden; 
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    th, td { 
+      padding: 10px; 
+      border: 1px solid #ccc; 
+      text-align: center; 
+    }
+    input[type="number"] { width: 60px; }
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 5px;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+    }
+    .toast.show { opacity: 1; }
+    /* Fixed Home button */
+    .top-left-button {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: #007bff;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 4px;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Fixed Home button -->
+  <a href="home.html" class="top-left-button">🏠 Home</a>
+  <div class="container">
+    <h2>Computer Reservation</h2>
+    <div class="nav">
+      <a href="reservation.html">Reservation</a>
+      <a href="cart.html">Cart</a>
+      <a href="sessions.html">Sessions</a>
+    </div>
+    
+    <!-- Toggle Checkbox -->
+    <div class="toggle-container">
+      <label>
+        <input type="checkbox" id="toggle-all">
+        Show All Computers
+      </label>
+    </div>
+    
+    <div id="computer-list"></div>
+    <div id="reservation-message" class="toast"></div>
+  </div>
+
+  <script>
+    const baseURL = 'http://localhost:8000';
+    const toggleAll = document.getElementById('toggle-all');
+    const computerList = document.getElementById('computer-list');
+    const toast = document.getElementById('reservation-message');
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+      window.location.href = 'login.html';
+    }
+
+    // ดึงข้อมูลเครื่องจาก backend
+    async function fetchComputers() {
+      try {
+        const res = await fetch(`${baseURL}/computers`);
+        const data = await res.json();
+        displayComputers(data);
+      } catch (error) {
+        computerList.innerHTML = `<p>Error fetching computers: ${error.message}</p>`;
+      }
+    }
+
+    // แสดงตารางเครื่องคอมพิวเตอร์
+    function displayComputers(computers) {
+      const showAll = toggleAll.checked;
+      let filteredData = [];
+      if (showAll) {
+        filteredData = computers;
+      } else {
+        filteredData = computers.filter(comp => comp.status === "Available");
+      }
+      
+      let html = `<table>
+        <thead>
+          <tr>
+            <th>Computer Name</th>
+            <th>Price/Hour</th>
+            <th>Hours</th>
+            <th>Total Price</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>`;
+      
+      filteredData.forEach(comp => {
+        const compName = comp.name;
+        const pricePerHour = comp.price_per_hour || 50;
+        const isAvailable = comp.status === "Available";
+        // ถ้าเครื่องไม่ว่าง ให้แสดงชื่อเป็นสีแดง
+        const nameCell = isAvailable ? compName : `<span style="color: red;">${compName}</span>`;
+        // ปุ่ม Reserve ถูก disable ถ้าเครื่องไม่ Available
+        const disabled = isAvailable ? "" : "disabled";
+        // ถ้าเครื่องไม่ Available ปรับสไตล์ปุ่ม Reserve ให้เป็นสีเทาพร้อมข้อความสีแดง
+        const btnStyle = isAvailable ? "" : "style='background: grey; color: red;'";
+        
+        html += `<tr id="comp-${comp.id}">
+          <td>${nameCell}</td>
+          <td>${pricePerHour}</td>
+          <td>
+            <input type="number" id="hours-${comp.id}" value="1" min="1" onchange="updatePrice(${comp.id}, ${pricePerHour})">
+          </td>
+          <td id="price-${comp.id}">${pricePerHour.toFixed(2)}</td>
+          <td>
+            <button onclick="reserveComputer(${comp.id}, '${compName}', ${pricePerHour})" ${disabled} ${btnStyle}>Reserve</button>
+          </td>
+        </tr>`;
+      });
+      
+      html += `</tbody></table>`;
+      computerList.innerHTML = html;
+    }
+
+    // อัปเดตราคาเมื่อเปลี่ยนจำนวนชั่วโมง
+    function updatePrice(compId, pricePerHour) {
+      const hours = parseInt(document.getElementById(`hours-${compId}`).value) || 1;
+      const discount = hours > 1 ? Math.min((hours - 1) * 5, 45) : 0;
+      const total = pricePerHour * hours * (1 - discount / 100);
+      document.getElementById(`price-${compId}`).textContent = total.toFixed(2);
+    }
+
+    // แสดง Toast Notification
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => { toast.classList.remove('show'); }, 5000);
+    }
+
+    // เพิ่มข้อมูลการจองลงใน Cart (localStorage)
+    function addToCart(item) {
+      let cart = JSON.parse(localStorage.getItem('cart')) || [];
+      cart.push(item);
+      localStorage.setItem('cart', JSON.stringify(cart));
+    }
+
+    // ฟังก์ชันจองเครื่องคอมพิวเตอร์
+    async function reserveComputer(compId, compName, pricePerHour) {
+      const hours = parseInt(document.getElementById(`hours-${compId}`).value) || 1;
+      const discount = hours > 1 ? Math.min((hours - 1) * 5, 45) : 0;
+      const total = pricePerHour * hours * (1 - discount / 100);
+      const now = new Date();
+      const start_time = now.toISOString();
+      const end_time = new Date(now.getTime() + hours * 60 * 60 * 1000).toISOString();
+      const deadline = now.getTime() + 300000; // 5 นาทีใน ms
+
+      const reservationData = {
+         UserId: user.id,
+         ComputerId: compId,
+         hours,
+         discount,
+         total_price: total.toFixed(2),
+         status: "pending",
+         reservation_time: now.toISOString(),
+         start_time,
+         end_time,
+         deadline,
+         price_per_hour: pricePerHour
+      };
+
+      try {
+         const res = await fetch(`${baseURL}/reservations`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(reservationData)
+         });
+         const data = await res.json();
+         if (res.ok) {
+            addToCart({ type: 'reservation', data });
+            showToast(`Reserved ${compName}. Time left: 5:00`);
+            // Disable Reserve button หลังจองสำเร็จ
+            document.querySelector(`#comp-${compId} button`).disabled = true;
+            setTimeout(() => { cancelReservation(data.id, compId); }, 300000);
+         } else {
+            showToast(data.error || 'Reservation failed!');
+         }
+      } catch (error) {
+         showToast('Error: ' + error.message);
+      }
+    }
+
+    async function cancelReservation(reservationId, compId) {
+      try {
+         const res = await fetch(`${baseURL}/reservations/${reservationId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: "empty" })
+         });
+         if (res.ok) {
+            showToast(`Reservation canceled due to timeout.`);
+            document.querySelector(`#comp-${compId} button`).disabled = false;
+         }
+      } catch (error) {
+         console.error('Error canceling reservation:', error);
+      }
+    }
+
+    toggleAll.addEventListener('change', fetchComputers);
+    fetchComputers();
+  </script>
+</body>
+</html>
