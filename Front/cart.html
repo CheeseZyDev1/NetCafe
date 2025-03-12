@@ -10,7 +10,14 @@
     h2 { text-align: center; }
     /* Fixed Home button */
     .top-left-button {
-      position: fixed; top: 20px; left: 20px; background: #007bff; color: #fff; padding: 10px 16px; border-radius: 4px; text-decoration: none;
+      position: fixed; 
+      top: 20px; 
+      left: 20px; 
+      background: #007bff; 
+      color: #fff; 
+      padding: 10px 16px; 
+      border-radius: 4px; 
+      text-decoration: none;
     }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { padding: 10px; border: 1px solid #ccc; text-align: center; }
@@ -56,7 +63,8 @@
           const key = item.data.productId;
           if (orderMap[key]) {
             orderMap[key].data.quantity += item.data.quantity;
-            orderMap[key].data.total_price = (orderMap[key].data.unit_price * orderMap[key].data.quantity).toFixed(2);
+            orderMap[key].data.total_price = 
+              (orderMap[key].data.unit_price * orderMap[key].data.quantity).toFixed(2);
           } else {
             orderMap[key] = { ...item };
           }
@@ -92,9 +100,10 @@
       let total = 0;
       cart.forEach((item, index) => {
         if (item.type === 'reservation') {
+          // เปลี่ยนจาก ComputerId เป็น ComputerName
           html += `<tr>
             <td>Reservation</td>
-            <td>Computer ${item.data.ComputerId} (Discount: <span id="discount-${index}">${item.data.discount}</span>%)</td>
+            <td>Computer ${item.data.ComputerName} (Discount: <span id="discount-${index}">${item.data.discount}</span>%)</td>
             <td>
               <input type="number" value="${item.data.hours}" min="1" onchange="updateReservationHours(${index}, this.value)">
             </td>
@@ -107,7 +116,10 @@
           html += `<tr>
             <td>Order</td>
             <td>${item.data.productName}</td>
-            <td><input type="number" value="${item.data.quantity}" min="1" onchange="updateOrderQuantity(${index}, this.value)"></td>
+            <td>
+              <input type="number" value="${item.data.quantity}" min="1" 
+                     onchange="updateOrderQuantity(${index}, this.value)">
+            </td>
             <td>${item.data.total_price}</td>
             <td>-</td>
             <td><button onclick="removeItem(${index})">🗑️</button></td>

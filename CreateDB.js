@@ -26,16 +26,24 @@ const User = sequelize.define('User', {
 // Computers (เครื่องคอมพิวเตอร์)
 const Computer = sequelize.define('Computer', {
   name: { type: DataTypes.STRING, allowNull: false, unique: true },
-  status: { type: DataTypes.STRING, defaultValue: 'Available' },
+  status: { type: DataTypes.STRING, defaultValue: 'Available', allowNull: false },
   last_used: { type: DataTypes.DATE, allowNull: true },
   price_per_hour: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 50 },
 }, { timestamps: true });
 
 // Sessions (การใช้งานคอมพิวเตอร์)
 const Session = sequelize.define('Session', {
-  start_time: { type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.NOW },
+  start_time: { 
+    type: DataTypes.DATE, 
+    allowNull: false, 
+    defaultValue: Sequelize.NOW 
+  },
   end_time:   { type: DataTypes.DATE, allowNull: true },
-  total_price:{ type: DataTypes.FLOAT, allowNull: true },
+  total_price:{ 
+    type: DataTypes.FLOAT, 
+    allowNull: false, 
+    defaultValue: 0 
+  },
 }, { timestamps: true });
 
 // Payments (การชำระเงิน)
@@ -47,7 +55,7 @@ const Payment = sequelize.define('Payment', {
 // Orders (พรีออเดอร์อาหาร)
 const Order = sequelize.define('Order', {
   total_price: { type: DataTypes.FLOAT, allowNull: false },
-  status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+  status: { type: DataTypes.STRING, defaultValue: 'Pending', allowNull: false },
 }, { timestamps: true });
 
 // OrderItems (รายการอาหาร)
@@ -55,25 +63,49 @@ const OrderItem = sequelize.define('OrderItem', {
   quantity: { type: DataTypes.INTEGER, allowNull: false },
 }, { timestamps: true });
 
-// Products (เมนูอาหาร) – ต้องมีราคา > 0 และ stock
+// Products (เมนูอาหาร)
 const Product = sequelize.define('Product', {
   name: { type: DataTypes.STRING, allowNull: false },
-  price: { type: DataTypes.FLOAT, allowNull: false },  // ราคา ต้องมากกว่า 0
+  price: { type: DataTypes.FLOAT, allowNull: false },  // ราคา > 0
   category: { type: DataTypes.STRING, allowNull: false },
   stock: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 }
 }, { timestamps: true });
 
 // Reservations (การจองเครื่องคอมพิวเตอร์)
 const Reservation = sequelize.define('Reservation', {
-  reservation_time: { type: DataTypes.DATE, allowNull: false },
-  status: { type: DataTypes.STRING, defaultValue: 'Pending' },
-  hours: { type: DataTypes.INTEGER, allowNull: true },
-  discount: { type: DataTypes.FLOAT, allowNull: true },
-  total_price: { type: DataTypes.FLOAT, allowNull: true },
+  reservation_time: { 
+    type: DataTypes.DATE, 
+    allowNull: false, 
+    defaultValue: Sequelize.NOW 
+  },
+  status: { 
+    type: DataTypes.STRING, 
+    defaultValue: 'Pending',
+    allowNull: false
+  },
+  hours: { 
+    type: DataTypes.INTEGER, 
+    allowNull: false, 
+    defaultValue: 1 
+  },
+  discount: { 
+    type: DataTypes.FLOAT, 
+    allowNull: false, 
+    defaultValue: 0 
+  },
+  total_price: { 
+    type: DataTypes.FLOAT, 
+    allowNull: false, 
+    defaultValue: 0 
+  },
   start_time: { type: DataTypes.DATE, allowNull: true },
   end_time: { type: DataTypes.DATE, allowNull: true },
   deadline: { type: DataTypes.BIGINT, allowNull: true },
-  price_per_hour: { type: DataTypes.FLOAT, allowNull: true }
+  price_per_hour: { 
+    type: DataTypes.FLOAT, 
+    allowNull: false, 
+    defaultValue: 50 
+  }
 }, { timestamps: true });
 
 // ----------------------
@@ -127,6 +159,9 @@ const connectDB = async () => {
 const initDB = async () => {
   try {
     console.log("📌 Syncing database...");
+    // ใช้ sync({ alter: true }) หากต้องการปรับ schema ตาม Model
+    // โดยไม่ลบข้อมูลเก่า
+    // หรือ sync({ force: true }) ถ้าต้องการรีเซ็ตข้อมูลใหม่ทุกครั้ง
     await sequelize.sync({ alter: true });
     console.log('✅ Database & tables synchronized!');
   } catch (error) {

@@ -79,7 +79,6 @@
   <div class="container">
     <h2>Computer Reservation</h2>
     <div class="nav">
-      <a href="reservation.html">Reservation</a>
       <a href="cart.html">Cart</a>
       <a href="sessions.html">Sessions</a>
     </div>
@@ -199,9 +198,12 @@
       const end_time = new Date(now.getTime() + hours * 60 * 60 * 1000).toISOString();
       const deadline = now.getTime() + 300000; // 5 นาทีใน ms
 
+      // เปลี่ยน key เป็น user_id และ computer_id และเพิ่ม ComputerName
       const reservationData = {
-         UserId: user.id,
-         ComputerId: compId,
+         user_id: user.id,
+         computer_id: compId,
+         // เพิ่ม ComputerName เพื่อเก็บชื่อคอมพิวเตอร์
+         ComputerName: compName,
          hours,
          discount,
          total_price: total.toFixed(2),
@@ -221,6 +223,8 @@
          });
          const data = await res.json();
          if (res.ok) {
+            // Merge ComputerName จาก reservationData ลงใน data เพื่อให้แสดงได้ในใบเสร็จ
+            data.ComputerName = compName;
             addToCart({ type: 'reservation', data });
             showToast(`Reserved ${compName}. Time left: 5:00`);
             // Disable Reserve button หลังจองสำเร็จ

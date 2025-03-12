@@ -257,19 +257,40 @@
       let html = `<button class="btn add" onclick="showForm('${model}', 'add')">Add New</button>`;
       html += `<table><thead><tr>`;
       if (data.length > 0) {
+        // สร้างหัวตารางจาก key ของ item แรก
         Object.keys(data[0]).forEach(key => {
           html += `<th>${key}</th>`;
         });
-        html += `<th>Actions</th>`;
-        html += `</tr></thead><tbody>`;
+        html += `<th>Actions</th></tr></thead><tbody>`;
+
         data.forEach(item => {
           html += `<tr>`;
           Object.keys(item).forEach(key => {
             let cellValue = item[key];
-            // ถ้าเป็น object หรือ array ให้ JSON.stringify
-            if (typeof cellValue === 'object' && cellValue !== null) {
-              cellValue = JSON.stringify(cellValue);
+
+            // กรณีพิเศษ: หากเป็นฟิลด์ User หรือ Computer (ซึ่งเป็น object)
+            // ให้แสดงชื่อแทน JSON ยาว
+            if (key === "User" && cellValue && typeof cellValue === 'object') {
+              // แสดง username
+              cellValue = cellValue.username || "(no username)";
             }
+            else if (key === "Computer" && cellValue && typeof cellValue === 'object') {
+              // แสดง name ของคอมพิวเตอร์
+              cellValue = cellValue.name || "(no name)";
+            }
+            // กรณีเป็นออบเจ็กต์หรืออาเรย์อื่น ๆ
+            else if (typeof cellValue === 'object' && cellValue !== null) {
+              if (Array.isArray(cellValue)) {
+                cellValue = `(${cellValue.length} items)`;
+              } else {
+                let str = JSON.stringify(cellValue);
+                if (str.length > 50) {
+                  str = str.substring(0, 50) + "...";
+                }
+                cellValue = str;
+              }
+            }
+
             html += `<td>${cellValue}</td>`;
           });
           html += `<td>
@@ -448,11 +469,12 @@
         alert("Please enter a Customer ID");
         return;
       }
-      fetch(`${baseURL}/admin/sessions?user_id=${customerId}`, {
+      fetch(`${baseURL}/admin/sessions`, {
         headers: { 'x-admin-password': 'secret-admin-password' }
       })
       .then(response => response.json())
-      .then(data => {
+      .then(allSessions => {
+        const data = allSessions.filter(s => s.user_id == customerId);
         let output = `<h4>Customer Sessions</h4>`;
         if (data.length > 0) {
           data.forEach(session => {
@@ -474,11 +496,12 @@
         alert("Please enter a Customer ID");
         return;
       }
-      fetch(`${baseURL}/admin/orders?user_id=${customerId}`, {
+      fetch(`${baseURL}/admin/orders`, {
         headers: { 'x-admin-password': 'secret-admin-password' }
       })
       .then(response => response.json())
-      .then(data => {
+      .then(allOrders => {
+        const data = allOrders.filter(o => o.user_id == customerId);
         let output = `<h4>Customer Orders (Receipts)</h4>`;
         if (data.length > 0) {
           data.forEach(order => {

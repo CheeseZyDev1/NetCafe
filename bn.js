@@ -567,9 +567,23 @@ app.delete('/notifications/:id', async (req, res) => {
 });
 
 // Reservations
+// Endpoint สำหรับสร้าง Reservation
 app.post('/reservations', async (req, res) => {
   try {
-    const newReservation = await Reservation.create(req.body);
+    // map ค่าจาก req.body ให้ตรงกับชื่อ field ใน Model (user_id, computer_id)
+    const newReservation = await Reservation.create({
+      user_id: req.body.UserId,
+      computer_id: req.body.ComputerId,
+      hours: req.body.hours,
+      discount: req.body.discount,
+      total_price: req.body.total_price,
+      start_time: req.body.start_time,
+      end_time: req.body.end_time,
+      deadline: req.body.deadline,
+      price_per_hour: req.body.price_per_hour,
+      status: req.body.status,
+      reservation_time: req.body.reservation_time
+    });
     res.status(201).json(newReservation);
   } catch (error) {
     res.status(500).json({ error: error.message });
