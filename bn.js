@@ -14,7 +14,7 @@ const {
   Report,
   Notification,
   Reservation,
-} = require('./CreateDB');
+} = require('./CreateDB2');
 
 const app = express();
 const port = process.env.PORT || 8000;

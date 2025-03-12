@@ -2,8 +2,13 @@
 require('dotenv').config(); // อ่านค่า .env
 const { Sequelize, DataTypes } = require('sequelize');
 const path = require('path');
-
+const sequelize = new Sequelize({
+  dialect: 'sqlite',
+  storage: path.join(__dirname, 'db.sqlite'),
+  logging: false,
+});
 // ตั้งค่าการเชื่อมต่อ PostgreSQL สำหรับ Railway โดยใช้ DATABASE_URL จาก .env
+/*
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   dialectOptions: {
@@ -14,7 +19,7 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
   },
   logging: false,
 });
-
+*/
 // ----------------------
 // Models
 // ----------------------
