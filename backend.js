@@ -49,6 +49,12 @@ const adminAuth = (req, res, next) => {
    Authentication Endpoints (สำหรับผู้ใช้ทั่วไป)
 ================================ */
 
+// Endpoint สำหรับ test
+
+app.get('/', (req, res) => {
+  res.send('Welcome to NetCafe API!');
+});
+
 // Endpoint สำหรับ Login
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
