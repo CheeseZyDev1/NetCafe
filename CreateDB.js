@@ -72,6 +72,7 @@ const Product = sequelize.define('Product', {
 }, { timestamps: true });
 
 // Reservations (การจองเครื่องคอมพิวเตอร์)
+// ลบฟิลด์ deadline ออก
 const Reservation = sequelize.define('Reservation', {
   reservation_time: { 
     type: DataTypes.DATE, 
@@ -100,7 +101,7 @@ const Reservation = sequelize.define('Reservation', {
   },
   start_time: { type: DataTypes.DATE, allowNull: true },
   end_time: { type: DataTypes.DATE, allowNull: true },
-  deadline: { type: DataTypes.BIGINT, allowNull: true },
+  // deadline: { type: DataTypes.BIGINT, allowNull: true },  // ถูกลบออก
   price_per_hour: { 
     type: DataTypes.FLOAT, 
     allowNull: false, 
@@ -159,11 +160,10 @@ const connectDB = async () => {
 const initDB = async () => {
   try {
     console.log("📌 Syncing database...");
-    // ใช้ sync({ alter: true }) หากต้องการปรับ schema ตาม Model
-    // โดยไม่ลบข้อมูลเก่า
-    // หรือ sync({ force: true }) ถ้าต้องการรีเซ็ตข้อมูลใหม่ทุกครั้ง
-    await sequelize.sync({ alter: true });
-    console.log('✅ Database & tables synchronized!');
+    // ใช้ force: true เพื่อรีเซ็ตตารางทั้งหมด
+    // แล้วสร้างใหม่ตาม Model (deadline ถูกลบ)
+    await sequelize.sync({ force: true });
+    console.log('✅ Database & tables synchronized with force!');
   } catch (error) {
     console.error('❌ Error initializing database:', error);
   }
