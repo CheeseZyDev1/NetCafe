@@ -1,7 +1,7 @@
 // CreateDB.js
 require('dotenv').config(); // อ่านค่า .env
+
 const { Sequelize, DataTypes } = require('sequelize');
-const path = require('path');
 
 // ตั้งค่าการเชื่อมต่อ PostgreSQL สำหรับ Railway โดยใช้ DATABASE_URL จาก .env
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
@@ -69,10 +69,10 @@ const OrderItem = sequelize.define('OrderItem', {
   quantity: { type: DataTypes.INTEGER, allowNull: false },
 }, { timestamps: true });
 
-// Products (เมนูอาหาร)
+// Products (เมนูอาหาร) – ราคาต้อง > 0 และ stock
 const Product = sequelize.define('Product', {
   name: { type: DataTypes.STRING, allowNull: false },
-  price: { type: DataTypes.FLOAT, allowNull: false },  // ราคาต้อง > 0
+  price: { type: DataTypes.FLOAT, allowNull: false },
   category: { type: DataTypes.STRING, allowNull: false },
   stock: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 }
 }, { timestamps: true });
@@ -206,5 +206,8 @@ module.exports = {
   Order,
   OrderItem,
   Product,
+  Coupon,
+  Report,
+  Notification,
   Reservation,
 };

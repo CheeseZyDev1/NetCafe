@@ -24,10 +24,10 @@ const {
   OrderItem,
   Product,
   Reservation,
-} = require('./CreateDB')(sequelize); // ✅ ใช้ sequelize ที่ประกาศไว้ด้านบน
+} = require('./CreateDB'); // ✅ ใช้ sequelize ที่ประกาศไว้ด้านบน
 
 const app = express();
-const port = process.env.PORT || 8000;
+const port = process.env.PORT 
 
 // Middleware
 app.use(cors());
