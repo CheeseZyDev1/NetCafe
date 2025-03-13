@@ -222,8 +222,5 @@ module.exports = {
   Order,
   OrderItem,
   Product,
-  Coupon,
-  Report,
-  Notification,
   Reservation,
 };
