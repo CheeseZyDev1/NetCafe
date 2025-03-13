@@ -1,4 +1,5 @@
 // CreateDB.js
+/*
 require('dotenv').config(); // อ่านค่า .env
 
 const { Sequelize, DataTypes } = require('sequelize');
@@ -14,6 +15,21 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
   },
   logging: false,
 });
+*/
+
+const express = require('express');
+const { Sequelize, DataTypes } = require('sequelize');
+
+
+// parse incoming requests
+//app.use(express.json());
+
+// set db url
+const dbUrl = 'postgres://webadmin:XYIcvc98762@node71725-noderest-67.proen.app.ruk-com.cloud:11749/login';
+
+// create a connection to the database
+const sequelize = new Sequelize(dbUrl);
+
 
 // ----------------------
 // Models
@@ -183,7 +199,7 @@ const connectDB = async () => {
 const initDB = async () => {
   try {
     console.log("📌 Syncing database with force: true (all tables will be dropped and recreated)...");
-    await sequelize.sync({ force: true });
+    await sequelize.sync({ alter: true });
     console.log('✅ Database & tables synchronized with force!');
   } catch (error) {
     console.error('❌ Error initializing database:', error);

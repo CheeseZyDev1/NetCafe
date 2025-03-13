@@ -1,4 +1,5 @@
 // backend.js
+/*
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -15,6 +16,24 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
     },
   },
 });
+*/
+
+const express = require('express');
+const Sequelize = require('sequelize');
+const cors = require('cors');
+const path = require('path');
+
+// ประกาศ app
+const app = express();
+// parse incoming requests
+app.use(express.json());
+
+// set db url
+const dbUrl = 'postgres://webadmin:XYIcvc98762@node71725-noderest-67.proen.app.ruk-com.cloud:11749/login';
+
+// create a connection to the database
+const sequelize = new Sequelize(dbUrl);
+
 
 // Import Models จาก CreateDB
 const {
@@ -28,13 +47,12 @@ const {
   Reservation,
 } = require('./CreateDB'); 
 
-// ประกาศ app
-const app = express();
-const port = process.env.PORT || 3000;
+
+
+const port = process.env.PORT || 8000;
 
 // ใช้งาน Middleware
 app.use(cors());
-app.use(express.json());
 
 // ให้ไฟล์ static ในโฟลเดอร์ public
 app.use(express.static(path.join(__dirname, 'public')));
