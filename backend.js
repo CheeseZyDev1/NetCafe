@@ -29,7 +29,7 @@ const app = express();
 app.use(express.json());
 
 // set db url
-const dbUrl = 'postgres://webadmin:XYIcvc98762@node77385-netcafe-project.proen.app.ruk-com.cloud:11678';
+const dbUrl = 'postgres://webadmin:LTIfke85193@node77385-netcafe-project.proen.app.ruk-com.cloud:11678/Netcafe';
 
 // create a connection to the database
 const sequelize = new Sequelize(dbUrl);
