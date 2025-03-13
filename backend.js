@@ -49,7 +49,7 @@ const {
 
 
 
-const port = process.env.PORT || 4500;
+const port = process.env.PORT || 5555;
 
 // ใช้งาน Middleware
 app.use(cors());
