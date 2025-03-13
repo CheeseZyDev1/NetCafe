@@ -1,0 +1,24 @@
+{
+    "development": {
+      "username": "webadmin",
+      "password": "LTIfke85193",
+      "database": "Netcafe",
+      "host": "node77385-netcafe-project.proen.app.ruk-com.cloud",
+      "dialect": "postgres"
+    },
+    "test": {
+      "username": "webadmin",
+      "password": "LTIfke85193",
+      "database": "Netcafe_test",
+      "host": "node77385-netcafe-project.proen.app.ruk-com.cloud",
+      "dialect": "postgres"
+    },
+    "production": {
+      "username": "webadmin",
+      "password": "LTIfke85193",
+      "database": "Netcafe",
+      "host": "node77385-netcafe-project.proen.app.ruk-com.cloud",
+      "dialect": "postgres"
+    }
+  }
+  

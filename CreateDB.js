@@ -25,7 +25,7 @@ const { Sequelize, DataTypes } = require('sequelize');
 //app.use(express.json());
 
 // set db url
-const dbUrl = 'postgres://webadmin:XYIcvc98762@node71725-noderest-67.proen.app.ruk-com.cloud:11749/login';
+const dbUrl = 'postgres://webadmin:LTIfke85193@node77385-netcafe-project.proen.app.ruk-com.cloud:5432/Netcafe';
 
 // create a connection to the database
 const sequelize = new Sequelize(dbUrl);
