@@ -46,12 +46,29 @@ const User = sequelize.define('user', {
 }, { timestamps: true, tableName: 'users' });
 
 // Computers (เครื่องคอมพิวเตอร์)
+/*
 const Computer = sequelize.define('computer', {
   name: { type: DataTypes.STRING, allowNull: false, unique: true },
   status: { type: DataTypes.STRING, defaultValue: 'Available', allowNull: false },
   last_used: { type: DataTypes.DATE, allowNull: true },
   price_per_hour: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 50 },
 }, { timestamps: true });
+*/
+const Computer = sequelize.define('computer', {
+  name: { type: DataTypes.STRING, allowNull: false, unique: true },
+  status: { type: DataTypes.STRING, defaultValue: 'Available', allowNull: false },
+  last_used: { type: DataTypes.DATE, allowNull: true },
+  price_per_hour: { 
+    type: DataTypes.FLOAT, 
+    allowNull: false, 
+    defaultValue: 50,
+    get() {
+      return Number(this.getDataValue('price_per_hour'));
+    }
+  },
+}, { timestamps: true });
+
+
 
 // Sessions (การใช้งานคอมพิวเตอร์)
 const Session = sequelize.define('session', {
