@@ -8,7 +8,7 @@ const {
   OrderItem,
   Product,
   Reservation
-} = require('./CreateDB2'); 
+} = require('../CreateDB2'); 
 
 (async () => {
   try {
