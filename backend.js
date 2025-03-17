@@ -31,7 +31,7 @@ app.use(express.json());
 // set db url
 //const dbUrl = "postgresql://postgres:HzG4tTsbQ6DnaX8w@db.ejxgohnorvvrnfmqiymv.supabase.co:5432/postgres"
 //const dbUrl = 'postgres://webadmin:LTIfke85193@10.104.21.86/Netcafe';
-const dbUrl = 'postgres://webadmin:LTIfke85193@node77385-netcafe-project.proen.app.ruk-com.cloud:11678/Netcafe';
+const dbUrl = 'postgres://webadmin:LTIfke85193@node77385-netcafe-project.proen.app.ruk-com.cloud:5432/Netcafe';
 
 // create a connection to the database
 const sequelize = new Sequelize(dbUrl);
